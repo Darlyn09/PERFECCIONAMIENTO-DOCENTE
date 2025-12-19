@@ -16,19 +16,48 @@ use App\Models\Programa;
 
 class AdminController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        // Contadores reales desde la base de datos
+        // Contadores reales
+        // Contadores reales
         $totalParticipants = Participante::count();
         $totalEvents = Evento::count();
         $totalCourses = Curso::count();
-        $totalPrograms = 0;
 
-        try {
-            $totalPrograms = Programa::count();
-        } catch (\Exception $e) {
-            // Si la tabla no existe o tiene otro formato
+        // --- GESTIÓN DE OFERTAS (Req 51-57) ---
+        // Filtrar programas vigentes (que no han finalizado)
+        $progQuery = Programa::with(['curso', 'relator'])
+            ->withCount('inscripciones')
+            ->where(function ($q) {
+                $q->whereDate('pro_finaliza', '>=', now())
+                    ->orWhere(function ($q2) {
+                        $q2->whereNull('pro_finaliza')
+                            ->whereDate('pro_inicia', '>=', now());
+                    });
+            });
+
+        // Actualizar contador de programas para reflejar solo los vigentes/disponibles
+        $totalPrograms = $progQuery->count();
+
+        // Filtro: Búsqueda por nombre de curso (Req 53)
+        if ($request->has('search') && $request->search != '') {
+            $progQuery->whereHas('curso', function ($q) use ($request) {
+                $q->where('cur_nombre', 'like', '%' . $request->search . '%')
+                    ->orWhere('cur_codigo', 'like', '%' . $request->search . '%');
+            });
         }
+
+        // Filtro: Modalidad (Req 57)
+        if ($request->has('modalidad') && $request->modalidad != '') {
+            $progQuery->whereHas('curso', function ($q) use ($request) {
+                $q->where('cur_modalidad', $request->modalidad);
+            });
+        }
+
+        // Ordenamiento: Próximos a iniciar primero
+        $programas = $progQuery->orderBy('pro_inicia', 'asc') // Cambiado a ASC para ver los más próximos primero
+            ->paginate(10, ['*'], 'programs_page');
+
 
         // Obtener eventos próximos con conteo de cursos
         $upcomingEvents = collect();
@@ -109,7 +138,8 @@ class AdminController extends Controller
             'upcomingEvents',
             'courseAreas',
             'topCategories',
-            'topCourses'
+            'topCourses',
+            'programas'
         ));
     }
 }

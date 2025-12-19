@@ -32,7 +32,8 @@
                     </div>
                 @endif
 
-                <form action="{{ route('participant.update_password') }}" method="POST" class="max-w-lg">
+                <form id="update-password-form" action="{{ route('participant.update_password') }}" method="POST"
+                    class="max-w-lg">
                     @csrf
                     <div class="space-y-6">
                         <div>
@@ -71,7 +72,13 @@
                         </div>
 
                         <div class="pt-6">
-                            <button type="submit"
+                            <button type="button" @click.prevent="$dispatch('confirm-action', { 
+                                    title: 'Actualizar Contraseña', 
+                                    message: '¿Estás seguro de que deseas cambiar tu contraseña?', 
+                                    type: 'warning',
+                                    formId: 'update-password-form',
+                                    confirmText: 'Sí, Cambiar Contraseña' 
+                                })"
                                 class="w-full md:w-auto px-8 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg transition-all shadow-md hover:shadow-lg flex items-center justify-center">
                                 <i class="fa fa-save mr-2"></i> Guardar Nueva Contraseña
                             </button>

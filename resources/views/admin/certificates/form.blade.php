@@ -46,23 +46,23 @@
 
         <!-- Header -->
         @if(request('mode') != 'modal')
-        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-            <div>
-                <h1 class="text-2xl font-bold text-gray-800">
-                    {{ isset($certificate) ? 'Editar Plantilla' : 'Nueva Plantilla' }}
-                </h1>
-                <p class="text-gray-500">Configura el diseño y contenido del certificado.</p>
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+                <div>
+                    <h1 class="text-2xl font-bold text-gray-800">
+                        {{ isset($certificate) ? 'Editar Plantilla' : 'Nueva Plantilla' }}
+                    </h1>
+                    <p class="text-gray-500">Configura el diseño y contenido del certificado.</p>
+                </div>
+                <a href="{{ route('admin.certificates.index') }}"
+                    class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition shadow-sm font-medium text-sm">
+                    <i class="fas fa-arrow-left mr-2"></i> Volver
+                </a>
             </div>
-            <a href="{{ route('admin.certificates.index') }}"
-                class="inline-flex items-center px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition shadow-sm font-medium text-sm">
-                <i class="fas fa-arrow-left mr-2"></i> Volver
-            </a>
-        </div>
         @else
-        <!-- Minimal Modal Header -->
-        <div class="mb-4 pb-2 border-b border-gray-200 flex justify-between items-center bg-white sticky top-0 z-10 p-2">
-             <h2 class="text-lg font-bold text-gray-800">Editando: {{ $certificate['name'] ?? 'Certificado' }}</h2>
-        </div>
+            <!-- Minimal Modal Header -->
+            <div class="mb-4 pb-2 border-b border-gray-200 flex justify-between items-center bg-white sticky top-0 z-10 p-2">
+                 <h2 class="text-lg font-bold text-gray-800">Editando: {{ $certificate['name'] ?? 'Certificado' }}</h2>
+            </div>
         @endif
 
         @if ($errors->any())
@@ -92,7 +92,7 @@
                             <!-- Hidden Dimensions -->
                             <input type="hidden" name="width" value="{{ $certificate['width'] ?? 800 }}">
                             <input type="hidden" name="height" value="{{ $certificate['height'] ?? 600 }}">
-                            
+
                             <!-- Tabs Header -->
                             <div class="border-b border-gray-200 bg-gray-100 overflow-x-auto">
                                 <nav class="flex -mb-px" aria-label="Tabs">
@@ -168,6 +168,38 @@
                                             </div>
                                         </div>
                                     </div>
+
+                                    <!-- Page Configuration (Added) -->
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-5 pt-4 border-t border-gray-200">
+                                        <div>
+                                            <label class="block text-sm font-extrabold text-gray-800 mb-2 uppercase tracking-wide">Tamaño de Hoja</label>
+                                            <div class="relative">
+                                                <select name="page_size" @change="updatePreview"
+                                                    class="w-full appearance-none rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all py-3 px-4 bg-white text-gray-900 font-medium text-base">
+                                                    <option value="custom" {{ (old('page_size', $certificate['page_size'] ?? 'custom') == 'custom') ? 'selected' : '' }}>Personalizado (Px)</option>
+                                                    <option value="letter" {{ (old('page_size', $certificate['page_size'] ?? '') == 'letter') ? 'selected' : '' }}>Carta (Letter)</option>
+                                                    <option value="a4" {{ (old('page_size', $certificate['page_size'] ?? '') == 'a4') ? 'selected' : '' }}>A4</option>
+                                                </select>
+                                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                                                    <i class="fas fa-chevron-down"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-sm font-extrabold text-gray-800 mb-2 uppercase tracking-wide">Orientación</label>
+                                            <div class="relative">
+                                                <select name="orientation" @change="updatePreview"
+                                                    class="w-full appearance-none rounded-xl border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all py-3 px-4 bg-white text-gray-900 font-medium text-base">
+                                                    <option value="landscape" {{ (old('orientation', $certificate['orientation'] ?? 'landscape') == 'landscape') ? 'selected' : '' }}>Horizontal (Paisaje)</option>
+                                                    <option value="portrait" {{ (old('orientation', $certificate['orientation'] ?? '') == 'portrait') ? 'selected' : '' }}>Vertical (Retrato)</option>
+                                                </select>
+                                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-500">
+                                                    <i class="fas fa-chevron-down"></i>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
                                 </div>
 
                                 <!-- DESIGN TAB -->
@@ -183,7 +215,8 @@
                                         </div>
                                         <div>
                                             <label class="block text-sm font-bold text-gray-700 mb-1">Imagen de Fondo</label>
-                                            <input type="file" name="bg_image" accept="image/*" class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"/>
+                                            <input type="file" name="bg_image" accept="image/*" @change="updatePreview"
+                                                class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200"/>
                                         </div>
                                     </div>
 
@@ -244,12 +277,38 @@
                                             </div>
                                         </div>
 
+                                        <div class="mt-4">
+                                            <label class="block text-sm font-bold text-gray-700 mb-1">Tipografía Título</label>
+                                            <select name="title_font" @change="updatePreview" class="w-full rounded-lg border border-gray-300 p-2 bg-white">
+                                                <option value="'Arial', sans-serif" {{ (old('title_font', $certificate['settings']['title_font'] ?? '') == "'Arial', sans-serif") ? 'selected' : '' }}>Arial</option>
+                                                <option value="'Helvetica', sans-serif" {{ (old('title_font', $certificate['settings']['title_font'] ?? '') == "'Helvetica', sans-serif") ? 'selected' : '' }}>Helvetica</option>
+                                                <option value="'Times New Roman', serif" {{ (old('title_font', $certificate['settings']['title_font'] ?? '') == "'Times New Roman', serif") ? 'selected' : '' }}>Times New Roman</option>
+                                                <option value="'Georgia', serif" {{ (old('title_font', $certificate['settings']['title_font'] ?? '') == "'Georgia', serif") ? 'selected' : '' }}>Georgia</option>
+                                                <option value="'Courier New', monospace" {{ (old('title_font', $certificate['settings']['title_font'] ?? '') == "'Courier New', monospace") ? 'selected' : '' }}>Courier New</option>
+                                                <option value="'Brush Script MT', cursive" {{ (old('title_font', $certificate['settings']['title_font'] ?? '') == "'Brush Script MT', cursive") ? 'selected' : '' }}>Brush Script (Cursiva)</option>
+                                            </select>
+                                        </div>
+
                                         <hr class="border-gray-200 my-4">
 
                                         <div>
                                             <label class="block text-sm font-bold text-gray-700 mb-1">Texto Introductorio</label>
                                             <input type="text" name="body_text" class="w-full rounded-lg border border-gray-300 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-200 p-3 bg-white"
                                                 value="{{ old('body_text', $certificate['settings']['body_text'] ?? 'Se otorga el presente reconocimiento a:') }}">
+                                        </div>
+
+                                        <div class="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label class="block text-sm font-bold text-gray-700 mb-1">Tipografía Cuerpo</label>
+                                                <select name="body_font" @change="updatePreview" class="w-full rounded-lg border border-gray-300 p-2 bg-white">
+                                                    <option value="'Arial', sans-serif" {{ (old('body_font', $certificate['settings']['body_font'] ?? '') == "'Arial', sans-serif") ? 'selected' : '' }}>Arial</option>
+                                                    <option value="'Helvetica', sans-serif" {{ (old('body_font', $certificate['settings']['body_font'] ?? '') == "'Helvetica', sans-serif") ? 'selected' : '' }}>Helvetica</option>
+                                                    <option value="'Times New Roman', serif" {{ (old('body_font', $certificate['settings']['body_font'] ?? '') == "'Times New Roman', serif") ? 'selected' : '' }}>Times New Roman</option>
+                                                    <option value="'Georgia', serif" {{ (old('body_font', $certificate['settings']['body_font'] ?? '') == "'Georgia', serif") ? 'selected' : '' }}>Georgia</option>
+                                                    <option value="'Courier New', monospace" {{ (old('body_font', $certificate['settings']['body_font'] ?? '') == "'Courier New', monospace") ? 'selected' : '' }}>Courier New</option>
+                                                </select>
+                                            </div>
+                                            <div><!-- Spacer --></div>
                                         </div>
 
                                         <div>
@@ -271,14 +330,22 @@
                                         </div>
                                         <div>
                                             <label class="block text-xs font-bold text-gray-500 uppercase mb-1">Imagen de Firma</label>
-                                            <input type="file" name="signature_image" class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"/>
+                                            <input type="file" name="signature_image" @change="updatePreview"
+                                                class="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-600 file:text-white hover:file:bg-blue-700"/>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             <div class="bg-gray-100 px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-                                <button type="submit" class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg transform hover:-translate-y-0.5 transition-all flex items-center">
+                                <button type="button" @click.prevent="$dispatch('confirm-action', { 
+                                    title: 'Guardar Plantilla', 
+                                    message: '¿Confirma que desea guardar los cambios en esta plantilla?', 
+                                    type: 'enable',
+                                    formId: 'certForm',
+                                    confirmText: 'Sí, Guardar' 
+                                })"
+                                class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg transform hover:-translate-y-0.5 transition-all flex items-center">
                                     <i class="fas fa-save mr-2"></i> GUARDAR CAMBIOS
                                 </button>
                             </div>

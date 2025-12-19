@@ -15,7 +15,7 @@ class EventController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Evento::withCount('cursos');
+        $query = Evento::withCount(['cursos', 'cursosActivos']);
         $now = Carbon::now();
 
         // Búsqueda
@@ -34,10 +34,10 @@ class EventController extends Controller
                 case 'vigente':
                     // Eventos que están en curso (fecha inicio <= hoy <= fecha fin)
                     $query->where('eve_inicia', '<=', $now)
-                          ->where(function($q) use ($now) {
-                              $q->where('eve_finaliza', '>=', $now)
+                        ->where(function ($q) use ($now) {
+                            $q->where('eve_finaliza', '>=', $now)
                                 ->orWhereNull('eve_finaliza');
-                          });
+                        });
                     break;
                 case 'proximo':
                     // Eventos que aún no comienzan
@@ -53,9 +53,9 @@ class EventController extends Controller
         // Filtro por mes/año
         if ($request->has('mes') && $request->mes != '') {
             $mes = $request->mes; // formato: 2025-01
-            $query->where(function($q) use ($mes) {
+            $query->where(function ($q) use ($mes) {
                 $q->whereRaw("DATE_FORMAT(eve_inicia, '%Y-%m') = ?", [$mes])
-                  ->orWhereRaw("DATE_FORMAT(eve_finaliza, '%Y-%m') = ?", [$mes]);
+                    ->orWhereRaw("DATE_FORMAT(eve_finaliza, '%Y-%m') = ?", [$mes]);
             });
         }
 
@@ -64,24 +64,47 @@ class EventController extends Controller
             $query->whereYear('eve_inicia', $request->anio);
         }
 
-        $events = $query->orderBy('eve_inicia', 'desc')->paginate(12);
-        
+        // Filtro por tipo
+        if ($request->has('tipo') && $request->tipo != '') {
+            $query->where('eve_tipo', $request->tipo);
+        }
+
+        // Ordenamiento
+        $sort = $request->input('orden', 'fecha_desc');
+        switch ($sort) {
+            case 'nombre_asc':
+                $query->orderBy('eve_nombre', 'asc');
+                break;
+            case 'nombre_desc':
+                $query->orderBy('eve_nombre', 'desc');
+                break;
+            case 'fecha_asc':
+                $query->orderBy('eve_inicia', 'asc');
+                break;
+            case 'fecha_desc':
+            default:
+                $query->orderBy('eve_inicia', 'desc');
+                break;
+        }
+
+        $events = $query->paginate(12);
+
         // Contadores globales
         $totalEventos = Evento::count();
         $totalActivos = Evento::where('eve_estado', 1)->count();
         $totalInactivos = Evento::where('eve_estado', 0)->count();
-        
+
         // Contadores por período
         $vigentes = Evento::where('eve_estado', 1)
             ->where('eve_inicia', '<=', $now)
-            ->where(function($q) use ($now) {
+            ->where(function ($q) use ($now) {
                 $q->where('eve_finaliza', '>=', $now)
-                  ->orWhereNull('eve_finaliza');
+                    ->orWhereNull('eve_finaliza');
             })->count();
-            
+
         $proximos = Evento::where('eve_estado', 1)
             ->where('eve_inicia', '>', $now)->count();
-            
+
         $finalizados = Evento::where('eve_finaliza', '<', $now)->count();
 
         // Obtener años disponibles para el filtro
@@ -95,9 +118,9 @@ class EventController extends Controller
         $anioSeleccionado = $request->anio ?? $now->year;
 
         return view('admin.events.index', compact(
-            'events', 
-            'totalEventos', 
-            'totalActivos', 
+            'events',
+            'totalEventos',
+            'totalActivos',
             'totalInactivos',
             'vigentes',
             'proximos',
@@ -156,9 +179,11 @@ class EventController extends Controller
      */
     public function show($id)
     {
-        $event = Evento::with(['cursos' => function($query) {
-            $query->with('categoria')->orderBy('cur_fecha_inicio', 'asc');
-        }])->findOrFail($id);
+        $event = Evento::with([
+            'cursos' => function ($query) {
+                $query->with('categoria')->orderBy('cur_fecha_inicio', 'asc');
+            }
+        ])->findOrFail($id);
 
         return view('admin.events.show', compact('event'));
     }
@@ -190,9 +215,14 @@ class EventController extends Controller
 
         try {
             $event->update($request->only([
-                'eve_nombre', 'eve_descripcion', 'eve_inicia', 
-                'eve_finaliza', 'eve_tipo', 'eve_estado',
-                'eve_abre', 'eve_cierra'
+                'eve_nombre',
+                'eve_descripcion',
+                'eve_inicia',
+                'eve_finaliza',
+                'eve_tipo',
+                'eve_estado',
+                'eve_abre',
+                'eve_cierra'
             ]));
 
             return redirect()->route('admin.events.show', $id)->with('success', 'Evento actualizado correctamente.');
@@ -206,6 +236,9 @@ class EventController extends Controller
     /**
      * Cambiar estado del evento
      */
+    /**
+     * Cambiar estado del evento
+     */
     public function toggleStatus($id)
     {
         $event = Evento::findOrFail($id);
@@ -214,5 +247,23 @@ class EventController extends Controller
 
         $status = $event->eve_estado == 1 ? 'activado' : 'desactivado';
         return redirect()->back()->with('success', "Evento {$status} correctamente.");
+    }
+
+    /**
+     * Eliminar evento
+     */
+    public function destroy($id)
+    {
+        $event = Evento::findOrFail($id);
+
+        try {
+            // Verificar si tiene cursos activos antes de eliminar? 
+            // Por ahora eliminamos el evento (cascada si está configurado, o soft delete si lo hubiera)
+            // Asumimos eliminación directa
+            $event->delete();
+            return redirect()->route('admin.events.index')->with('success', 'Evento eliminado correctamente.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error al eliminar el evento: ' . $e->getMessage());
+        }
     }
 }

@@ -72,7 +72,8 @@
                     </div>
                 @endif
 
-                <form action="{{ route('admin.events.update', $event->eve_id) }}" method="POST" class="p-6 sm:p-8">
+                <form id="edit-event-form" action="{{ route('admin.events.update', $event->eve_id) }}" method="POST"
+                    class="p-6 sm:p-8">
                     @csrf
                     @method('PUT')
 
@@ -209,7 +210,13 @@
                             class="w-full sm:w-auto px-6 py-3 text-slate-500 hover:text-slate-700 hover:bg-slate-100 font-bold rounded-xl transition-all text-center border border-transparent hover:border-slate-200">
                             Cancelar
                         </a>
-                        <button type="submit"
+                        <button type="button" @click.prevent="$dispatch('confirm-action', { 
+                                title: 'Actualizar Evento', 
+                                message: '¿Estás seguro de que deseas guardar los cambios realizados en este evento?', 
+                                type: 'edit',
+                                formId: 'edit-event-form',
+                                confirmText: 'Sí, Actualizar' 
+                            })"
                             class="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7">

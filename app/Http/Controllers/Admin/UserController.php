@@ -26,8 +26,10 @@ class UserController extends Controller
             });
         }
 
+        $curso = null;
         // 🎓 Filtrar por Curso
         if ($request->filled('curso_id')) {
+            $curso = \App\Models\Curso::find($request->curso_id);
             $query->join('inscripcion', 'participante.par_login', '=', 'inscripcion.par_login')
                 ->where('inscripcion.cur_id', $request->curso_id)
                 ->select('participante.*'); // Evitar columnas duplicadas
@@ -40,17 +42,93 @@ class UserController extends Controller
                 ->select('participante.*'); // Evitar columnas duplicadas
         }
 
+        // Filtro por Rol
+        if ($request->filled('rol')) {
+            $query->where('par_perfil', $request->rol);
+        }
+
+        // 📊 Estadísticas (Respetando filtros)
+        $totalUsuarios = $query->clone()->count();
+        $totalAdmins = $query->clone()->where('par_perfil', 'admin')->count();
+        $totalRegular = $query->clone()->where('par_perfil', '!=', 'admin')->count();
+
         // 👥 Usuarios = todos los participantes
         $usuarios = $query->orderBy('par_nombre')
             ->paginate(20)
             ->withQueryString();
 
-        // 📊 Estadísticas Globales
-        $totalUsuarios = Participante::count();
-        $totalAdmins = Participante::where('par_perfil', 'admin')->count();
-        $totalRegular = Participante::where('par_perfil', '!=', 'admin')->count();
+        return view('admin.users.index', compact('usuarios', 'totalUsuarios', 'totalAdmins', 'totalRegular', 'curso'));
+    }
 
-        return view('admin.users.index', compact('usuarios', 'totalUsuarios', 'totalAdmins', 'totalRegular'));
+    public function export(Request $request)
+    {
+        $query = Participante::query();
+
+        // Aplicar mismos filtros que en index
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('par_nombre', 'like', "%$search%")
+                    ->orWhere('par_apellido', 'like', "%$search%")
+                    ->orWhere('par_login', 'like', "%$search%")
+                    ->orWhere('par_correo', 'like', "%$search%");
+            });
+        }
+
+        if ($request->filled('curso_id')) {
+            $query->join('inscripcion', 'participante.par_login', '=', 'inscripcion.par_login')
+                ->where('inscripcion.cur_id', $request->curso_id)
+                ->select('participante.*');
+        }
+
+        if ($request->filled('evento_id')) {
+            $query->join('participacion', 'participante.par_login', '=', 'participacion.par_participa')
+                ->where('participacion.eve_id', $request->evento_id)
+                ->select('participante.*');
+        }
+
+        if ($request->filled('rol')) {
+            $query->where('par_perfil', $request->rol);
+        }
+
+        $usuarios = $query->get();
+        $filename = "usuarios_" . date('Ymd_His') . ".csv";
+
+        $headers = [
+            "Content-type" => "text/csv; charset=UTF-8",
+            "Content-Disposition" => "attachment; filename=$filename",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        ];
+
+        $columns = ['RUT/Login', 'Nombre', 'Apellidos', 'Correo', 'Perfil', 'Cargo', 'Facultad', 'Departamento', 'Sede', 'Teléfono/Anexo', 'Fecha Registro'];
+
+        $callback = function () use ($usuarios, $columns) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // BOM
+            fputcsv($file, $columns, ';'); // Separador ; para Excel en español
+
+            foreach ($usuarios as $u) {
+                $row = [
+                    $u->par_login,
+                    $u->par_nombre,
+                    $u->par_apellido,
+                    $u->par_correo,
+                    $u->par_perfil,
+                    $u->par_cargo,
+                    $u->par_facultad,
+                    $u->par_departamento,
+                    $u->par_sede,
+                    $u->par_anexo,
+                    $u->fecha_registro,
+                ];
+                fputcsv($file, $row, ';');
+            }
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     public function show($id)

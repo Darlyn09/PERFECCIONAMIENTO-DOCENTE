@@ -32,7 +32,7 @@ class TeacherController extends Controller
             }
         }
 
-        $teachers = $query->orderBy('rel_nombre')->paginate(10);
+        $teachers = $query->withCount('programas')->orderBy('rel_nombre')->paginate(10);
 
         // Totales globales del sistema (no afectados por filtros ni paginación)
         $totalRelatores = \App\Models\Relator::count();
@@ -43,6 +43,70 @@ class TeacherController extends Controller
         })->count();
 
         return view('admin.teachers.index', compact('teachers', 'totalRelatores', 'totalHabilitados', 'totalInternos', 'totalExternos'));
+    }
+
+    public function export(Request $request)
+    {
+        $query = \App\Models\Relator::query()->withCount('programas');
+
+        if ($request->has('search') && $request->get('search')) {
+            $search = $request->get('search');
+            $query->where(function ($q) use ($search) {
+                $q->where('rel_nombre', 'like', "%{$search}%")
+                    ->orWhere('rel_apellido', 'like', "%{$search}%")
+                    ->orWhere('rel_login', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->has('tipo') && $request->get('tipo') !== '') {
+            $tipo = $request->get('tipo');
+            if ($tipo == 'interno') {
+                $query->whereNotNull('rel_facultad')->where('rel_facultad', '!=', '');
+            } elseif ($tipo == 'externo') {
+                $query->where(function ($q) {
+                    $q->whereNull('rel_facultad')->orWhere('rel_facultad', '');
+                });
+            }
+        }
+
+        $teachers = $query->orderBy('rel_nombre')->get();
+
+        $headers = array(
+            "Content-type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=relatores_expert_inst.csv",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        );
+
+        $columns = array('RUT', 'Nombre', 'Apellido', 'Correo', 'Telefono', 'Cargo', 'Facultad/Unidad', 'Tipo', 'Estado', 'Programas Dictados');
+
+        $callback = function () use ($teachers, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns, ';'); // Using semicolon for Excel compatibility in some regions
+
+            foreach ($teachers as $teacher) {
+                $tipo = $teacher->rel_facultad ? 'Interno' : 'Externo';
+                $estado = $teacher->rel_estado == 1 ? 'Habilitado' : 'Inhabilitado';
+
+                fputcsv($file, array(
+                    $teacher->rel_login,
+                    $teacher->rel_nombre,
+                    $teacher->rel_apellido,
+                    $teacher->rel_correo,
+                    $teacher->rel_fono,
+                    $teacher->rel_cargo,
+                    $teacher->rel_facultad,
+                    $tipo,
+                    $estado,
+                    $teacher->programas_count
+                ), ';');
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     public function show($id)

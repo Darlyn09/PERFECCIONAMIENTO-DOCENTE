@@ -9,7 +9,13 @@ class CourseController extends Controller
 {
     public function index(Request $request)
     {
-        $query = \App\Models\Curso::with('categoria');
+        // Cargar cursos con conteo de ofertas activas (programas no finalizados)
+        $query = \App\Models\Curso::with('categoria')
+            ->withCount([
+                'programas as ofertas_activas_count' => function ($query) {
+                    $query->whereDate('pro_finaliza', '>=', now());
+                }
+            ]);
 
         // Filtro por Categoría
         if ($request->has('categoria') && $request->categoria != '') {
@@ -18,7 +24,10 @@ class CourseController extends Controller
 
         // Búsqueda simple
         if ($request->has('search') && $request->search != '') {
-            $query->where('cur_nombre', 'like', '%' . $request->search . '%');
+            $query->where(function ($q) use ($request) {
+                $q->where('cur_nombre', 'like', '%' . $request->search . '%')
+                    ->orWhere('cur_id', 'like', '%' . $request->search . '%');
+            });
         }
 
         // Filtro por Fecha (Desde)
@@ -26,8 +35,28 @@ class CourseController extends Controller
             $query->whereDate('cur_fecha_inicio', '>=', $request->fecha_inicio);
         }
 
-        // Ordenamiento: Mas recientes (por fecha inicio) primero. Si es null, usa ID desc
-        $query->orderBy('cur_fecha_inicio', 'desc')->orderBy('cur_id', 'desc');
+        // Filtro por Estado
+        if ($request->has('estado') && $request->estado !== null) {
+            $query->where('cur_estado', $request->estado);
+        }
+
+        // Ordenamiento
+        $sort = $request->input('orden', 'fecha_desc');
+        switch ($sort) {
+            case 'nombre_asc':
+                $query->orderBy('cur_nombre', 'asc');
+                break;
+            case 'nombre_desc':
+                $query->orderBy('cur_nombre', 'desc');
+                break;
+            case 'fecha_asc':
+                $query->orderBy('cur_fecha_inicio', 'asc');
+                break;
+            case 'fecha_desc':
+            default:
+                $query->orderBy('cur_fecha_inicio', 'desc')->orderBy('cur_id', 'desc');
+                break;
+        }
 
         $courses = $query->paginate(10);
         $categorias = \App\Models\Categoria::all();
@@ -38,13 +67,14 @@ class CourseController extends Controller
     public function create(Request $request)
     {
         $categorias = \App\Models\Categoria::all();
+        $eventos = \App\Models\Evento::where('eve_estado', 1)->orderBy('eve_inicia', 'desc')->get();
         $evento = null;
 
         if ($request->has('evento')) {
             $evento = \App\Models\Evento::find($request->evento);
         }
 
-        return view('admin.courses.create', compact('categorias', 'evento'));
+        return view('admin.courses.create', compact('categorias', 'eventos', 'evento'));
     }
 
     public function store(Request $request)
@@ -65,6 +95,9 @@ class CourseController extends Controller
             'cur_fecha_inicio' => 'nullable|date',
             'cur_fecha_termino' => 'nullable|date|after_or_equal:cur_fecha_inicio',
             'cur_link' => 'nullable|url',
+            'cur_lugar' => 'nullable|string',
+            'cur_latitud' => 'nullable|numeric|between:-90,90',
+            'cur_longitud' => 'nullable|numeric|between:-180,180',
         ]);
 
         try {
@@ -86,6 +119,9 @@ class CourseController extends Controller
                 'cur_fecha_inicio' => $request->input('cur_fecha_inicio'),
                 'cur_fecha_termino' => $request->input('cur_fecha_termino'),
                 'cur_link' => $request->input('cur_link', ''),
+                'cur_lugar' => $request->input('cur_lugar', ''),
+                'cur_latitud' => $request->input('cur_latitud'),
+                'cur_longitud' => $request->input('cur_longitud'),
             ];
 
             $curso = \App\Models\Curso::create($data);
@@ -136,6 +172,9 @@ class CourseController extends Controller
             'cur_modalidad' => 'required',
             'cur_fecha_inicio' => 'nullable|date',
             'cur_fecha_termino' => 'nullable|date|after_or_equal:cur_fecha_inicio',
+            'cur_lugar' => 'nullable|string',
+            'cur_latitud' => 'nullable|numeric|between:-90,90',
+            'cur_longitud' => 'nullable|numeric|between:-180,180',
         ]);
 
         $course->update($request->all());
@@ -156,5 +195,20 @@ class CourseController extends Controller
         $course->save();
 
         return redirect()->route('admin.courses.index')->with('success', 'Curso terminado e inhabilitado.');
+    }
+
+    public function destroy($id)
+    {
+        $course = \App\Models\Curso::findOrFail($id);
+
+        try {
+            // Opcional: Verificar si tiene alumnos inscritos antes de eliminar
+            // if($course->inscripciones()->count() > 0) { ... }
+
+            $course->delete();
+            return redirect()->route('admin.courses.index')->with('success', 'Curso eliminado correctamente.');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error al eliminar el curso: ' . $e->getMessage());
+        }
     }
 }

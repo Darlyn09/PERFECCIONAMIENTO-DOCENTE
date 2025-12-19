@@ -2,16 +2,14 @@
 
 @section('content')
     <div class="container mx-auto px-4 py-6" x-data="{ 
-                                                    showDeleteModal: false, 
-                                                    deleteUrl: '', 
-                                                    showEditModal: false, 
-                                                    editUrl: '',
+                                                                showEditModal: false, 
+                                                                editUrl: '',
 
-                                                    closeEditModal() {
-                                                        this.showEditModal = false;
-                                                        this.editUrl = '';
-                                                    }
-                                                 }" @keydown.escape.window="closeEditModal()">
+                                                                closeEditModal() {
+                                                                    this.showEditModal = false;
+                                                                    this.editUrl = '';
+                                                                }
+                                                             }" @keydown.escape.window="closeEditModal()">
 
         <!-- Listener for iframe message -->
         <script>
@@ -64,6 +62,32 @@
             </div>
         </div>
 
+        {{-- Search & Filter Bar --}}
+        <div class="mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-100">
+            <form action="{{ route('admin.certificates.index') }}" method="GET" class="flex flex-col sm:flex-row gap-4">
+                <div class="flex-1 relative">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <i class="fas fa-search text-gray-400"></i>
+                    </div>
+                    <input type="text" name="search" value="{{ request('search') }}"
+                        class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg leading-5 bg-white placeholder-gray-400 focus:outline-none focus:placeholder-gray-300 focus:ring-2 focus:ring-blue-100 focus:border-blue-400 sm:text-sm transition-all"
+                        placeholder="Buscar certificado por nombre...">
+                </div>
+                <div class="flex gap-2">
+                    <button type="submit"
+                        class="inline-flex items-center px-4 py-2 bg-blue-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-blue-700 active:bg-blue-900 focus:outline-none focus:border-blue-900 focus:ring ring-blue-300 disabled:opacity-25 transition ease-in-out duration-150">
+                        Buscar
+                    </button>
+                    @if(request('search'))
+                        <a href="{{ route('admin.certificates.index') }}"
+                            class="inline-flex items-center px-4 py-2 bg-gray-200 border border-transparent rounded-lg font-semibold text-xs text-gray-700 uppercase tracking-widest hover:bg-gray-300 transition ease-in-out duration-150">
+                            Limpiar
+                        </a>
+                    @endif
+                </div>
+            </form>
+        </div>
+
         <!-- Alerts -->
         @if (session('success'))
             <div class="bg-emerald-50 border-l-4 border-emerald-500 p-4 mb-6 rounded-r-lg shadow-sm flex items-center">
@@ -108,7 +132,7 @@
 
                         <!-- Preview Header (Mini Visual) -->
                         <div class="h-48 relative overflow-hidden flex items-center justify-center"
-                            style="background-color: {{ $cert['settings']['bg_color'] ?? '#f8fafc' }};">
+                            style="background-color: {{ $cert['settings']['bg_color'] ?? '#f8fafc' }}; {{ isset($cert['bg_image_url']) && $cert['bg_image_url'] ? "background-image: url('" . $cert['bg_image_url'] . "'); background-size: cover; background-position: center;" : '' }}">
 
                             <!-- Badges -->
                             <div class="absolute top-3 left-3 z-10">
@@ -129,9 +153,9 @@
                             <!-- Miniatura CSS -->
                             <div class="bg-white shadow-lg border border-gray-200 p-4 text-center transform scale-75 origin-center w-full max-w-[200px] aspect-[4/3] flex flex-col justify-center items-center"
                                 style="
-                                                                                                                                                                                    border-color: {{ $cert['settings']['border_color'] ?? '#ddd' }};
-                                                                                                                                                                                    border-width: {{ ($cert['settings']['border_width'] ?? 10) / 4 }}px;
-                                                                                                                                                                                 ">
+                                                                                                                                                                                                                        border-color: {{ $cert['settings']['border_color'] ?? '#ddd' }};
+                                                                                                                                                                                                                        border-width: {{ ($cert['settings']['border_width'] ?? 10) / 4 }}px;
+                                                                                                                                                                                                                     ">
                                 <div class="text-[8px] font-bold mb-1 leading-tight"
                                     style="color: {{ $cert['settings']['title_color'] ?? '#000' }};">
                                     {{ Str::limit($cert['settings']['title_text'] ?? 'CERTIFICADO', 20) }}
@@ -189,17 +213,33 @@
                                         <i class="fas fa-pencil-alt text-xs"></i>
                                     </button>
 
-                                    <button
-                                        @click="showDeleteModal = true; deleteUrl = '{{ route('admin.certificates.destroy', $cert['id']) }}'"
-                                        class="inline-flex items-center justify-center w-9 h-9 bg-gradient-to-br from-red-500 to-red-700 text-white rounded-xl hover:from-red-600 hover:to-red-800 transition-all shadow-md hover:shadow-lg hover:scale-105"
-                                        title="Eliminar">
-                                        <i class="far fa-trash-alt text-xs"></i>
-                                    </button>
+                                    <form id="delete-certificate-{{ $cert['id'] }}"
+                                        action="{{ route('admin.certificates.destroy', $cert['id']) }}" method="POST"
+                                        class="inline">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="button" @click="$dispatch('confirm-action', {
+                                                                                    title: 'Eliminar Plantilla',
+                                                                                    message: '¿Estás seguro de que deseas eliminar esta plantilla? Esta acción no se puede deshacer.',
+                                                                                    itemName: '{{ addslashes($cert['name']) }}',
+                                                                                    type: 'delete',
+                                                                                    formId: 'delete-certificate-{{ $cert['id'] }}'
+                                                                                })"
+                                            class="inline-flex items-center justify-center w-9 h-9 bg-gradient-to-br from-red-500 to-red-700 text-white rounded-xl hover:from-red-600 hover:to-red-800 transition-all shadow-md hover:shadow-lg hover:scale-105"
+                                            title="Eliminar">
+                                            <i class="far fa-trash-alt text-xs"></i>
+                                        </button>
+                                    </form>
                                 </div>
                             </div>
                         </div>
                     </div>
                 @endforeach
+            </div>
+
+            <!-- Pagination -->
+            <div class="mt-6">
+                {{ $certificates->appends(request()->query())->links() }}
             </div>
         @endif
 
@@ -243,60 +283,6 @@
             </div>
         </div>
 
-        <!-- Delete Modal (Alpine) -->
-        <div x-show="showDeleteModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto"
-            aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <div x-show="showDeleteModal" x-transition:enter="ease-out duration-300"
-                    x-transition:enter-start="opacity-0" x-transition:enter-end="opacity-100"
-                    x-transition:leave="ease-in duration-200" x-transition:leave-start="opacity-100"
-                    x-transition:leave-end="opacity-0" class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-                    aria-hidden="true" @click="showDeleteModal = false"></div>
 
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-                <div x-show="showDeleteModal" x-transition:enter="ease-out duration-300"
-                    x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                    x-transition:leave="ease-in duration-200"
-                    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-                    x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full relative z-50">
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                        <div class="sm:flex sm:items-start">
-                            <div
-                                class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                                <i class="fas fa-exclamation-triangle text-red-600"></i>
-                            </div>
-                            <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left">
-                                <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">
-                                    Eliminar Plantilla
-                                </h3>
-                                <div class="mt-2">
-                                    <p class="text-sm text-gray-500">
-                                        ¿Estás seguro de que deseas eliminar esta plantilla? Esta acción no se puede
-                                        deshacer.
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                        <form :action="deleteUrl" method="POST">
-                            @csrf
-                            @method('DELETE')
-                            <button type="submit"
-                                class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-red-600 text-base font-medium text-white hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 sm:ml-3 sm:w-auto sm:text-sm">
-                                Eliminar
-                            </button>
-                        </form>
-                        <button type="button" @click="showDeleteModal = false"
-                            class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">
-                            Cancelar
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 @endsection

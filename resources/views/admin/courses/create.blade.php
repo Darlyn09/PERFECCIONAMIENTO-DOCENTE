@@ -60,13 +60,31 @@
                     </div>
                 @endif
     
-                <form action="{{ route('admin.courses.store') }}" method="POST" class="p-6 sm:p-8">
+                <form id="create-course-form" action="{{ route('admin.courses.store') }}" method="POST" class="p-6 sm:p-8">
                     @csrf
-                    @if(isset($event))
-                        <input type="hidden" name="eve_id" value="{{ $event->eve_id }}">
-                    @endif
     
                     <div class="space-y-6">
+                        {{-- Campo Evento (Opcional) --}}
+                        <div class="space-y-2">
+                             <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide" for="eve_id">
+                                Evento Asociado <span class="text-slate-400 font-normal normal-case">(Opcional)</span>
+                            </label>
+                            <div class="relative">
+                                <select name="eve_id" id="eve_id"
+                                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm appearance-none">
+                                    <option value="">-- Sin asociación (Catálogo General) --</option>
+                                    @foreach($eventos as $evt)
+                                        <option value="{{ $evt->eve_id }}" {{ (isset($evento) && $evento->eve_id == $evt->eve_id) || old('eve_id') == $evt->eve_id ? 'selected' : '' }}>
+                                            {{ $evt->eve_nombre }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-slate-500">
+                                    <i class="fa fa-calendar-check"></i>
+                                </div>
+                            </div>
+                            <p class="text-xs text-slate-400">Si selecciona un evento, el curso quedará vinculado a él automáticamente.</p>
+                        </div>
                         <div class="space-y-2">
                              <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide" for="cur_nombre">
                                 Nombre del Curso <span class="text-amber-500">*</span>
@@ -187,8 +205,39 @@
                                 placeholder="Objetivos principales...">{{ old('cur_objetivos') }}</textarea>
                         </div>
                         
+                            </div>
+                        </div>
+
+                        {{-- Ubicación y Mapa (Solo Presencial/Híbrido) --}}
+                        <div id="location_field" style="display: none;" class="space-y-4 pt-6 mt-6 border-t border-slate-100">
+                            <h4 class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 mb-4">
+                                <i class="fas fa-map-marker-alt text-red-500"></i> Ubicación del Curso
+                            </h4>
+                            
+                            <div class="space-y-2">
+                                <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide" for="cur_lugar">
+                                    Dirección / Lugar
+                                </label>
+                                <div class="relative">
+                                    <input type="text" name="cur_lugar" id="cur_lugar" value="{{ old('cur_lugar') }}"
+                                        class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm"
+                                        placeholder="Ej: Auditorio Central, Av. Siempre Viva 123...">
+                                    <i class="fa fa-map-pin absolute left-4 top-1/2 -translate-y-1/2 text-slate-400"></i>
+                                </div>
+                                <p class="text-xs text-slate-400">Puede buscar una dirección o marcarla en el mapa.</p>
+                            </div>
+
+                            <div class="border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                                <div id="map" class="w-full h-64 bg-slate-100 z-0"></div>
+                            </div>
+                            
+                            {{-- Lat/Lng Ocultos --}}
+                            <input type="hidden" name="cur_latitud" id="cur_latitud" value="{{ old('cur_latitud') }}">
+                            <input type="hidden" name="cur_longitud" id="cur_longitud" value="{{ old('cur_longitud') }}">
+                        </div>
+
                         {{-- Más campos (Collapsible) --}}
-                        <details class="group bg-slate-50 rounded-xl border border-slate-200 overflow-hidden">
+                        <details class="group bg-slate-50 rounded-xl border border-slate-200 overflow-hidden mt-6">
                             <summary class="cursor-pointer font-bold text-slate-600 hover:text-blue-600 hover:bg-slate-100 px-6 py-4 flex items-center justify-between transition-colors select-none">
                                 <span class="flex items-center gap-2">
                                     <i class="fas fa-plus-circle text-amber-500"></i> Información Adicional (Opcional)
@@ -225,7 +274,13 @@
                            class="w-full sm:w-auto px-6 py-3 text-slate-500 hover:text-slate-700 hover:bg-slate-100 font-bold rounded-xl transition-all text-center border border-transparent hover:border-slate-200">
                             Cancelar
                         </a>
-                        <button type="submit" 
+                        <button type="button" @click.prevent="$dispatch('confirm-action', { 
+                            title: 'Crear Curso', 
+                            message: '¿Confirma que la información ingresada es correcta para crear este nuevo curso?', 
+                            type: 'enable',
+                            formId: 'create-course-form',
+                            confirmText: 'Sí, Crear Curso' 
+                        })" 
                                 class="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
                              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path></svg>
                             Crear Curso
@@ -236,16 +291,100 @@
         </div>
     </div>
     
+    {{-- Leaflet CSS & JS --}}
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin=""></script>
+
     <script>
         document.addEventListener('DOMContentLoaded', function () {
             const modalidadSelect = document.getElementById('cur_modalidad');
             const linkField = document.getElementById('link_field');
-            function toggleLinkField() {
-                const value = modalidadSelect.value;
-                linkField.style.display = (value == '2' || value == '3' || value == '4') ? 'block' : 'none';
+            const locationField = document.getElementById('location_field');
+            const mapContainer = document.getElementById('map');
+            
+            let map, marker;
+
+            // Inicializar Mapa
+            function initMap() {
+                if(map) return; // Ya inicializado
+                
+                // Coordenadas por defecto (Centro de Santiago o configurable)
+                const defaultLat = -33.4489;
+                const defaultLng = -70.6693;
+                
+                const latInput = document.getElementById('cur_latitud');
+                const lngInput = document.getElementById('cur_longitud');
+                
+                const initialLat = latInput.value || defaultLat;
+                const initialLng = lngInput.value || defaultLng;
+
+                map = L.map('map').setView([initialLat, initialLng], 13);
+
+                L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                    attribution: '&copy; OpenStreetMap contributors'
+                }).addTo(map);
+
+                marker = L.marker([initialLat, initialLng], {draggable: true}).addTo(map);
+
+                // Update inputs on drag
+                marker.on('dragend', function(e) {
+                    const latlng = marker.getLatLng();
+                    latInput.value = latlng.lat;
+                    lngInput.value = latlng.lng;
+                    getAddress(latlng.lat, latlng.lng);
+                });
+
+                // Update marker on map click
+                map.on('click', function(e) {
+                    marker.setLatLng(e.latlng);
+                    latInput.value = e.latlng.lat;
+                    lngInput.value = e.latlng.lng;
+                    getAddress(e.latlng.lat, e.latlng.lng);
+                });
+                
+                // Reverse Geocoding function
+                async function getAddress(lat, lng) {
+                    const placeInput = document.getElementById('cur_lugar');
+                    placeInput.placeholder = "Buscando dirección...";
+                    
+                    try {
+                        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`);
+                        const data = await response.json();
+                        if(data && data.display_name) {
+                            placeInput.value = data.display_name;
+                        }
+                    } catch (error) {
+                        console.error('Error obteniendo dirección:', error);
+                    }
+                }
+                
+                // Invalidate size to fix rendering issues inside hidden divs
+                 setTimeout(() => { map.invalidateSize(); }, 200);
             }
-            modalidadSelect.addEventListener('change', toggleLinkField);
-            toggleLinkField();
+
+            function toggleFields() {
+                const value = modalidadSelect.value;
+                
+                // Online (2, 3) -> Link
+                // Presencial (1), Híbrido (4) -> Ubicación
+                
+                if (value == '2' || value == '3') {
+                    linkField.style.display = 'block';
+                    locationField.style.display = 'none';
+                } else if (value == '1' || value == '4') {
+                    linkField.style.display = (value == '4') ? 'block' : 'none'; // Híbrido lleva ambos
+                    locationField.style.display = 'block';
+                    initMap();
+                } else {
+                     linkField.style.display = 'none';
+                     locationField.style.display = 'none';
+                }
+            }
+
+            modalidadSelect.addEventListener('change', toggleFields);
+            
+            // Run on load
+            toggleFields();
         });
     </script>
 @endsection

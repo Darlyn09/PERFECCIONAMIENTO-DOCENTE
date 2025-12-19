@@ -72,7 +72,7 @@
                         </h2>
                     </div>
                     <div class="p-5">
-                        <form action="{{ route('admin.categorias.store') }}" method="POST">
+                        <form id="create-category-form" action="{{ route('admin.categorias.store') }}" method="POST">
                             @csrf
                             
                             <div class="mb-5">
@@ -91,7 +91,13 @@
                                 @enderror
                             </div>
 
-                            <button type="submit"
+                            <button type="button" @click.prevent="$dispatch('confirm-action', { 
+                                title: 'Crear Categoría', 
+                                message: '¿Confirma que desea crear esta nueva categoría?', 
+                                type: 'enable',
+                                formId: 'create-category-form',
+                                confirmText: 'Sí, Crear' 
+                            })"
                                 class="w-full inline-flex items-center justify-center px-5 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-xl transition-all">
                                 <i class="fa fa-save mr-2"></i> Guardar Categoría
                             </button>

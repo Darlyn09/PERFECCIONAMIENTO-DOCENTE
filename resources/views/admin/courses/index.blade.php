@@ -104,6 +104,18 @@
                             <option value="0" {{ request('estado') === '0' ? 'selected' : '' }}>⏹️ Terminados</option>
                         </select>
                     </div>
+
+                    {{-- Ordenamiento (Nuevo) --}}
+                    <div class="relative">
+                        <i class="fa fa-sort absolute left-3 sm:left-4 top-1/2 -translate-y-1/2 text-blue-500 z-10"></i>
+                        <select name="orden" onchange="this.form.submit()"
+                                class="w-full pl-10 sm:pl-12 pr-4 py-3 sm:py-3.5 bg-white border border-gray-300 rounded-xl text-sm font-medium focus:outline-none focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 transition-all appearance-none cursor-pointer shadow-sm">
+                            <option value="fecha_desc" {{ request('orden') == 'fecha_desc' ? 'selected' : '' }}>📅 Fecha (Reciente)</option>
+                            <option value="fecha_asc" {{ request('orden') == 'fecha_asc' ? 'selected' : '' }}>📅 Fecha (Antigua)</option>
+                            <option value="nombre_asc" {{ request('orden') == 'nombre_asc' ? 'selected' : '' }}>🔤 Nombre (A-Z)</option>
+                            <option value="nombre_desc" {{ request('orden') == 'nombre_desc' ? 'selected' : '' }}>🔤 Nombre (Z-A)</option>
+                        </select>
+                    </div>
                 </div>
                 
                 {{-- Botones de acción --}}
@@ -198,6 +210,12 @@
                                 {{ $course->cur_fecha_inicio ? \Carbon\Carbon::parse($course->cur_fecha_inicio)->format('d/m/Y') : '—' }}
                             </div>
                             <div class="flex items-center text-slate-600">
+                                <i class="fa fa-users text-indigo-400 mr-2 w-4"></i>
+                                <span class="{{ ($course->ofertas_activas_count ?? 0) > 0 ? 'text-emerald-600 font-bold' : '' }}">
+                                    {{ $course->ofertas_activas_count ?? 0 }} ofertas
+                                </span>
+                            </div>
+                            <div class="flex items-center text-slate-600">
                                 <i class="fa fa-clock text-blue-400 mr-2 w-4"></i>
                                 {{ $course->cur_horas ?? 0 }} horas
                             </div>
@@ -252,6 +270,25 @@
                                     </button>
                                 </form>
                             @endif
+                            {{-- Botón Eliminar Móvil --}}
+                            <form id="delete-course-mobile-{{ $course->cur_id }}" action="{{ route('admin.courses.destroy', $course->cur_id) }}" method="POST" class="flex-1">
+                                @csrf
+                                @method('DELETE')
+                                <button type="button"
+                                        @click="$dispatch('confirm-action', {
+                                            title: 'Eliminar Curso',
+                                            message: '¿Estás seguro de que deseas eliminar este curso?',
+                                            itemName: '{{ addslashes($course->cur_nombre) }}',
+                                            type: 'delete',
+                                            formId: 'delete-course-mobile-{{ $course->cur_id }}',
+                                            confirmText: 'Sí, Eliminar'
+                                        })"
+                                        class="w-full inline-flex items-center justify-center px-3 py-2.5 bg-rose-100 text-rose-600 text-sm font-semibold rounded-xl hover:bg-rose-200 transition-all shadow-sm">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                    </svg>
+                                </button>
+                            </form>
                         </div>
                     </div>
                 @empty
@@ -276,6 +313,7 @@
                             <th class="text-left px-5 py-4 font-semibold text-slate-600 text-sm">Categoría</th>
                             <th class="text-center px-5 py-4 font-semibold text-slate-600 text-sm">Fecha</th>
                             <th class="text-center px-5 py-4 font-semibold text-slate-600 text-sm">Duración</th>
+                            <th class="text-center px-5 py-4 font-semibold text-slate-600 text-sm">Ofertas Activas</th>
                             <th class="text-center px-5 py-4 font-semibold text-slate-600 text-sm">Asistencia</th>
                             <th class="text-center px-5 py-4 font-semibold text-slate-600 text-sm">Estado</th>
                             <th class="text-center px-5 py-4 font-semibold text-slate-600 text-sm">Acciones</th>
@@ -329,6 +367,11 @@
                                     <span class="inline-flex items-center px-3 py-1 bg-blue-100 text-blue-700 text-sm font-semibold rounded-lg">
                                         <i class="fa fa-clock mr-1.5 text-blue-400"></i>
                                         {{ $course->cur_horas ?? 0 }}h
+                                    </span>
+                                </td>
+                                <td class="px-5 py-4 text-center">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ ($course->ofertas_activas_count ?? 0) > 0 ? 'bg-emerald-100 text-emerald-800' : 'bg-slate-100 text-slate-500' }}">
+                                        {{ $course->ofertas_activas_count ?? 0 }}
                                     </span>
                                 </td>
                                 <td class="px-5 py-4 text-center">
@@ -408,6 +451,27 @@
                                                 </svg>
                                             </span>
                                         @endif
+
+                                        {{-- Botón Eliminar (Nuevo) --}}
+                                        <form id="delete-course-{{ $course->cur_id }}" action="{{ route('admin.courses.destroy', $course->cur_id) }}" method="POST" class="inline ml-1">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button"
+                                                    @click="$dispatch('confirm-action', {
+                                                        title: 'Eliminar Curso',
+                                                        message: '¿Estás seguro de que deseas eliminar este curso? Esta acción es irreversible.',
+                                                        itemName: '{{ addslashes($course->cur_nombre) }}',
+                                                        type: 'delete',
+                                                        formId: 'delete-course-{{ $course->cur_id }}',
+                                                        confirmText: 'Sí, Eliminar'
+                                                    })"
+                                                    class="inline-flex items-center justify-center w-10 h-10 bg-rose-100 text-rose-600 rounded-xl hover:bg-rose-200 transition-all shadow-sm hover:shadow-md hover:scale-105"
+                                                    title="Eliminar permanentemente">
+                                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path>
+                                                </svg>
+                                            </button>
+                                        </form>
                                     </div>
                                 </td>
                             </tr>

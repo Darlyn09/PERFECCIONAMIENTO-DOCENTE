@@ -25,9 +25,72 @@ class RelatorController extends Controller
             });
         }
 
-        $relatores = $query->orderBy('rel_apellido')->paginate(10);
+        // Calcular Totales para Cards Estadísticas
+        $totalRelatores = Relator::count();
+        // Asumiendo que existe campo rel_estado o similar, sino adaptamos.
+        // En TeacherController usaban rel_estado=1. Validemos.
+        $totalHabilitados = Relator::where('rel_estado', 1)->count();
 
-        return view('admin.relators.index', compact('relatores'));
+        $totalInternos = Relator::whereNotNull('rel_facultad')->where('rel_facultad', '!=', '')->count();
+        $totalExternos = Relator::where(function ($q) {
+            $q->whereNull('rel_facultad')->orWhere('rel_facultad', '');
+        })->count();
+
+        $relatores = $query->withCount('programas')->orderBy('rel_apellido')->paginate(10);
+
+        return view('admin.relators.index', compact('relatores', 'totalRelatores', 'totalHabilitados', 'totalInternos', 'totalExternos'));
+    }
+
+    public function export(Request $request)
+    {
+        $query = Relator::query()->withCount('programas');
+
+        if ($request->has('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('rel_nombre', 'like', "%{$search}%")
+                    ->orWhere('rel_apellido', 'like', "%{$search}%")
+                    ->orWhere('rel_login', 'like', "%{$search}%")
+                    ->orWhere('rel_correo', 'like', "%{$search}%");
+            });
+        }
+
+        $relatores = $query->orderBy('rel_apellido')->get();
+
+        $headers = array(
+            "Content-type" => "text/csv",
+            "Content-Disposition" => "attachment; filename=relatores_sistema.csv",
+            "Pragma" => "no-cache",
+            "Cache-Control" => "must-revalidate, post-check=0, pre-check=0",
+            "Expires" => "0"
+        );
+
+        $columns = array('RUT', 'Nombre', 'Apellido', 'Correo', 'Telefono', 'Cargo', 'Facultad/Unidad', 'Tipo', 'Programas Dictados');
+
+        $callback = function () use ($relatores, $columns) {
+            $file = fopen('php://output', 'w');
+            fputcsv($file, $columns, ';');
+
+            foreach ($relatores as $relator) {
+                $tipo = $relator->rel_facultad ? 'Interno' : 'Externo';
+
+                fputcsv($file, array(
+                    $relator->rel_login,
+                    $relator->rel_nombre,
+                    $relator->rel_apellido,
+                    $relator->rel_correo,
+                    $relator->rel_fono,
+                    $relator->rel_cargo,
+                    $relator->rel_facultad,
+                    $tipo,
+                    $relator->programas_count
+                ), ';');
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**
@@ -132,5 +195,21 @@ class RelatorController extends Controller
 
         return redirect()->route('admin.relators.index')
             ->with('success', 'Relator eliminado exitosamente.');
+    }
+
+    /**
+     * Remove multiple resources from storage.
+     */
+    public function massDestroy(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'ids.*' => 'exists:relator,rel_login',
+        ]);
+
+        Relator::whereIn('rel_login', $request->ids)->delete();
+
+        return redirect()->route('admin.relators.index')
+            ->with('success', 'Relatores seleccionados eliminados exitosamente.');
     }
 }

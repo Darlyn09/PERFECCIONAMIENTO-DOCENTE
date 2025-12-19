@@ -42,7 +42,8 @@
                     </div>
                 @endif
 
-                <form action="{{ route('admin.categorias.update', $categoria->cur_categoria) }}" method="POST">
+                <form id="edit-category-form" action="{{ route('admin.categorias.update', $categoria->cur_categoria) }}"
+                    method="POST">
                     @csrf
                     @method('PUT')
 
@@ -75,7 +76,13 @@
                     @endif
 
                     <div class="flex items-center gap-4 mt-8">
-                        <button type="submit"
+                        <button type="button" @click.prevent="$dispatch('confirm-action', { 
+                                title: 'Actualizar Categoría', 
+                                message: '¿Estás seguro de que deseas guardar los cambios en esta categoría?', 
+                                type: 'edit',
+                                formId: 'edit-category-form',
+                                confirmText: 'Sí, Actualizar' 
+                            })"
                             class="flex-1 inline-flex items-center justify-center px-6 py-3.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-bold rounded-xl hover:from-blue-700 hover:to-indigo-700 shadow-lg shadow-blue-500/30 hover:shadow-xl transition-all">
                             <i class="fa fa-save mr-2"></i> Actualizar Categoría
                         </button>

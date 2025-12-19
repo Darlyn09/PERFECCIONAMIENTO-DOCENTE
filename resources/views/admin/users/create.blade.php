@@ -64,7 +64,7 @@
                     </div>
                 @endif
 
-                <form action="{{ route('admin.users.store') }}" method="POST" class="p-6 sm:p-8">
+                <form id="create-form" action="{{ route('admin.users.store') }}" method="POST" class="p-6 sm:p-8">
                     @csrf
 
                     <div class="space-y-6">
@@ -212,7 +212,13 @@
                             class="w-full sm:w-auto px-6 py-3 text-slate-500 hover:text-slate-700 hover:bg-slate-100 font-bold rounded-xl transition-all text-center border border-transparent hover:border-slate-200">
                             Cancelar
                         </a>
-                        <button type="submit"
+                        <button type="button" @click.prevent="$dispatch('confirm-action', { 
+                                title: 'Registrar Nuevo Usuario', 
+                                message: '¿Confirma que los datos ingresados son correctos? Se registrará un nuevo usuario en el sistema.', 
+                                type: 'enable',
+                                formId: 'create-form',
+                                confirmText: 'Sí, Registrar' 
+                            })"
                             class="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

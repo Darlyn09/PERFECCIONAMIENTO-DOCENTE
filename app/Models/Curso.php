@@ -29,7 +29,10 @@ class Curso extends Model
         'cur_estado',
         'cur_fecha_inicio',
         'cur_fecha_termino',
-        'cur_link'
+        'cur_link',
+        'cur_lugar',
+        'cur_latitud',
+        'cur_longitud',
     ];
 
     protected $casts = [

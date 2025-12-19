@@ -65,7 +65,8 @@
                 </div>
             @endif
 
-            <form action="{{ route('admin.settings.update') }}" method="POST" enctype="multipart/form-data">
+            <form id="settings-form" action="{{ route('admin.settings.update') }}" method="POST"
+                enctype="multipart/form-data">
                 @csrf
 
                 {{-- 1. Identidad de la Plataforma --}}
@@ -175,7 +176,13 @@
                 </div>
 
                 <div class="flex justify-end pt-6">
-                    <button type="submit"
+                    <button type="button" @click.prevent="$dispatch('confirm-action', { 
+                            title: 'Guardar Configuración', 
+                            message: '¿Estás seguro de que deseas guardar los cambios en la configuración del sistema?', 
+                            type: 'warning',
+                            formId: 'settings-form',
+                            confirmText: 'Sí, Guardar' 
+                        })"
                         class="px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 transition-all transform hover:scale-105">
                         <i class="fa fa-save mr-2"></i> Guardar Cambios
                     </button>

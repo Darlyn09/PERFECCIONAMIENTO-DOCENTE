@@ -4,17 +4,18 @@
 
 @section('content')
     <div x-data="{ 
-                selected: [], 
-                allSelected: false,
-                toggleAll() {
-                    this.allSelected = !this.allSelected;
-                    if (this.allSelected) {
-                        this.selected = {{ $usuarios->pluck('par_login')->toJson() }};
-                    } else {
-                        this.selected = [];
-                    }
-                }
-            }" class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 -m-4 p-4 sm:p-6 relative">
+                        selected: [], 
+                        allSelected: false,
+                        toggleAll() {
+                            this.allSelected = !this.allSelected;
+                            if (this.allSelected) {
+                                this.selected = {{ $usuarios->pluck('par_login')->toJson() }};
+                            } else {
+                                this.selected = [];
+                            }
+                        }
+                    }"
+        class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 -m-4 p-4 sm:p-6 relative">
 
         {{-- Barras de Acción Flotante --}}
         <div x-show="selected.length > 0" x-transition:enter="transition ease-out duration-300"
@@ -27,15 +28,19 @@
 
             <div class="h-6 w-px bg-white/20"></div>
 
-            <form action="{{ route('admin.users.mass_destroy') }}" method="POST"
-                onsubmit="return confirm('¿Estás seguro de eliminar los usuarios seleccionados? Esta acción no se puede deshacer.');">
+            <form id="mass-delete-form" action="{{ route('admin.users.mass_destroy') }}" method="POST">
                 @csrf
                 {{-- Solución Alpine para array en form --}}
                 <template x-for="id in selected" :key="id">
                     <input type="hidden" name="ids[]" :value="id">
                 </template>
 
-                <button type="submit"
+                <button type="button" @click.prevent="$dispatch('confirm-action', { 
+                            title: 'Eliminar Usuarios Selecciónados', 
+                            message: '¿Estás seguro de eliminar ' + selected.length + ' usuarios? Esta acción no se puede deshacer.', 
+                            type: 'delete',
+                            formId: 'mass-delete-form' 
+                        })"
                     class="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold transition-colors flex items-center shadow-lg shadow-red-500/30">
                     <i class="fa fa-trash-alt mr-2"></i> Eliminar
                 </button>
@@ -60,11 +65,15 @@
 
             {{-- Header Principal --}}
             <div
-                class="relative mb-6 bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 rounded-2xl overflow-hidden shadow-2xl">
+                class="relative mb-6 bg-gradient-to-r {{ isset($curso) ? 'from-slate-900 via-blue-900 to-indigo-900' : 'from-slate-800 via-slate-900 to-slate-800' }} rounded-2xl overflow-hidden shadow-2xl">
                 {{-- Decoración de fondo --}}
                 <div class="absolute inset-0 opacity-20">
-                    <div class="absolute -right-20 -top-20 w-80 h-80 border-[20px] border-amber-400/30 rounded-full"></div>
-                    <div class="absolute -left-16 -bottom-16 w-64 h-64 border-[16px] border-blue-400/20 rounded-full"></div>
+                    <div
+                        class="absolute -right-20 -top-20 w-80 h-80 border-[20px] {{ isset($curso) ? 'border-amber-400/30' : 'border-slate-400/10' }} rounded-full">
+                    </div>
+                    <div
+                        class="absolute -left-16 -bottom-16 w-64 h-64 border-[16px] {{ isset($curso) ? 'border-blue-400/20' : 'border-slate-400/10' }} rounded-full">
+                    </div>
                 </div>
 
                 <div class="relative px-6 sm:px-8 py-6 sm:py-8">
@@ -72,20 +81,38 @@
                         {{-- Info --}}
                         <div class="flex items-center gap-5">
                             <div
-                                class="w-14 h-14 sm:w-16 sm:h-16 bg-gradient-to-br from-amber-400 to-amber-600 rounded-2xl flex items-center justify-center shadow-xl shadow-amber-500/30">
+                                class="w-14 h-14 sm:w-16 sm:h-16 {{ isset($curso) ? 'bg-gradient-to-br from-amber-400 to-amber-600' : 'bg-slate-700' }} rounded-2xl flex items-center justify-center shadow-xl shadow-amber-500/30">
                                 <i class="fa fa-users text-white text-2xl sm:text-3xl"></i>
                             </div>
                             <div>
-                                <h1 class="text-xl sm:text-2xl font-bold text-white mb-1">Gestión de Usuarios</h1>
-                                <p class="text-indigo-200 text-sm">Administración de cuentas y permisos de acceso</p>
+                                @if(isset($curso))
+                                    <div class="flex items-center gap-2 mb-1">
+                                        <span
+                                            class="px-2 py-0.5 rounded-lg bg-white/10 text-indigo-100 text-xs font-bold border border-white/10">CURSO</span>
+                                        <span
+                                            class="text-indigo-200 text-xs font-medium">{{ $curso->cur_categoria ? $curso->categoria->nom_categoria : 'Sin categoría' }}</span>
+                                    </div>
+                                    <h1 class="text-xl sm:text-2xl font-bold text-white mb-1">{{ $curso->cur_nombre }}</h1>
+                                    <p class="text-indigo-200 text-sm">Listado de participantes inscritos</p>
+                                @else
+                                    <h1 class="text-xl sm:text-2xl font-bold text-white mb-1">Gestión de Usuarios</h1>
+                                    <p class="text-slate-300 text-sm">Administración de cuentas y permisos de acceso</p>
+                                @endif
                             </div>
                         </div>
 
-                        {{-- Botón Nuevo --}}
-                        <a href="{{ route('admin.users.create') }}"
-                            class="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl transition-all transform hover:-translate-y-0.5">
-                            <i class="fa fa-user-plus mr-2"></i> Nuevo Usuario
-                        </a>
+                        {{-- Botones Acción --}}
+                        <div class="flex flex-wrap gap-3">
+                            <a href="{{ route('admin.users.export', request()->query()) }}" target="_blank"
+                                class="inline-flex items-center justify-center px-5 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border border-white/10 transition-all backdrop-blur-sm">
+                                <i class="fas fa-file-excel mr-2 text-emerald-400"></i> Exportar Excel
+                            </a>
+
+                            <a href="{{ route('admin.users.create', request()->query()) }}"
+                                class="inline-flex items-center justify-center px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:from-blue-700 hover:to-indigo-700 hover:shadow-xl transition-all transform hover:-translate-y-0.5">
+                                <i class="fa fa-user-plus mr-2"></i> Nuevo Usuario
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -255,10 +282,17 @@
                                 </a>
                                 {{-- Assuming delete uses a form, implementing a simple button for now or reusing the form logic
                                 --}}
-                                <form action="{{ route('admin.users.destroy', $u->par_login) }}" method="POST"
-                                    class="inline-block" onsubmit="return confirm('¿Eliminar usuario?');">
+                                <form id="delete-form-mobile-{{ $u->par_login }}"
+                                    action="{{ route('admin.users.destroy', $u->par_login) }}" method="POST"
+                                    class="inline-block">
                                     @csrf @method('DELETE')
-                                    <button type="submit"
+                                    <button type="button" @click.prevent="$dispatch('confirm-action', { 
+                                                        title: 'Eliminar Usuario', 
+                                                        message: '¿Estás seguro de que deseas eliminar este usuario?', 
+                                                        itemName: '{{ $u->par_nombre }} {{ $u->par_apellido }}',
+                                                        type: 'delete',
+                                                        formId: 'delete-form-mobile-{{ $u->par_login }}' 
+                                                    })"
                                         class="w-10 h-10 inline-flex items-center justify-center bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-colors">
                                         <i class="fa fa-trash"></i>
                                     </button>
@@ -303,10 +337,8 @@
                             @forelse($usuarios as $u)
                                 <tr class="hover:bg-slate-50/50 transition-colors group">
                                     <td class="px-6 py-4 text-center">
-                                        <input type="checkbox" 
-                                               value="{{ $u->par_login }}" 
-                                               x-model="selected"
-                                               class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer">
+                                        <input type="checkbox" value="{{ $u->par_login }}" x-model="selected"
+                                            class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer">
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center">
@@ -386,10 +418,16 @@
                                                 title="Editar">
                                                 <i class="fa fa-pencil-alt"></i>
                                             </a>
-                                            <form action="{{ route('admin.users.destroy', $u->par_login) }}" method="POST"
-                                                onsubmit="return confirm('¿Eliminar usuario?');">
+                                            <form id="delete-form-{{ $u->par_login }}"
+                                                action="{{ route('admin.users.destroy', $u->par_login) }}" method="POST">
                                                 @csrf @method('DELETE')
-                                                <button type="submit"
+                                                <button type="button" @click.prevent="$dispatch('confirm-action', { 
+                                                                    title: 'Eliminar Usuario', 
+                                                                    message: '¿Estás seguro de que deseas eliminar este usuario?', 
+                                                                    itemName: '{{ $u->par_nombre }} {{ $u->par_apellido }}',
+                                                                    type: 'delete',
+                                                                    formId: 'delete-form-{{ $u->par_login }}' 
+                                                                })"
                                                     class="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-red-500 to-red-700 text-white rounded-xl hover:from-red-600 hover:to-red-800 transition-all shadow-lg hover:shadow-xl hover:scale-105"
                                                     title="Eliminar">
                                                     <i class="fa fa-trash"></i>

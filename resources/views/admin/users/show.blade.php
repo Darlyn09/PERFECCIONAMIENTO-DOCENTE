@@ -74,9 +74,15 @@
                        class="inline-flex items-center justify-center px-5 py-2.5 bg-amber-500 text-white rounded-xl hover:bg-amber-600 transition-all shadow-lg font-bold">
                         <i class="fa fa-pencil-alt mr-2"></i> Editar Usuario
                     </a>
-                    <form action="{{ route('admin.users.resend', $usuario->par_login) }}" method="POST" onsubmit="return confirm('¿Estás seguro? Esto generará una nueva contraseña y la enviará por correo.');">
+                    <form id="resend-form" action="{{ route('admin.users.resend', $usuario->par_login) }}" method="POST">
                         @csrf
-                        <button type="submit" 
+                        <button type="button" @click.prevent="$dispatch('confirm-action', { 
+                            title: 'Reenviar Credenciales', 
+                            message: 'Esto generará una nueva contraseña y la enviará por correo a {{ $usuario->par_correo }}. ¿Continuar?', 
+                            type: 'warning',
+                            itemName: '{{ $usuario->par_nombre }} {{ $usuario->par_apellido }}',
+                            formId: 'resend-form' 
+                        })"
                            class="w-full inline-flex items-center justify-center px-5 py-2.5 bg-white/10 backdrop-blur-md text-white border border-white/20 rounded-xl hover:bg-white/20 transition-all shadow-lg font-medium text-sm">
                             <i class="fa fa-key mr-2"></i> Reenviar Credenciales
                         </button>

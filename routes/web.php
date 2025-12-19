@@ -91,6 +91,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/courses/{id}/edit', [CourseController::class, 'edit'])->name('courses.edit');
     Route::put('/courses/{id}', [CourseController::class, 'update'])->name('courses.update');
     Route::patch('/courses/{id}/terminate', [CourseController::class, 'terminate'])->name('courses.terminate');
+    Route::delete('/courses/{id}', [CourseController::class, 'destroy'])->name('courses.destroy');
 
     // Gestión de Programas (sesiones de cursos)
     Route::get('/programs/create', [ProgramController::class, 'create'])->name('programs.create');
@@ -98,11 +99,14 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/programs/{id}/edit', [ProgramController::class, 'edit'])->name('programs.edit');
     Route::put('/programs/{id}', [ProgramController::class, 'update'])->name('programs.update');
     Route::delete('/programs/{id}', [ProgramController::class, 'destroy'])->name('programs.destroy');
+    Route::get('/programs/{id}/export', [ProgramController::class, 'exportParticipants'])->name('programs.export');
 
     // Rutas Relatores (Teachers - Legacy)
     // Route::resource('teachers', TeacherController::class); // Se mantiene si es necesario por retrocompatibilidad momentanea
 
     // Rutas Relatores (Nueva Implementación)
+    Route::post('/relators/mass-destroy', [\App\Http\Controllers\Admin\RelatorController::class, 'massDestroy'])->name('relators.mass_destroy');
+    Route::get('/relators/export', [\App\Http\Controllers\Admin\RelatorController::class, 'export'])->name('relators.export');
     Route::resource('relators', \App\Http\Controllers\Admin\RelatorController::class);
     Route::get('/teachers', [\App\Http\Controllers\Admin\RelatorController::class, 'index'])->name('teachers.index'); // Redirección temporal de nombres de ruta comunes si se usan en layouts
     Route::get('/teachers/create', [\App\Http\Controllers\Admin\RelatorController::class, 'create'])->name('teachers.create');
@@ -117,6 +121,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/events/{id}', [EventController::class, 'show'])->name('events.show');
     Route::get('/events/{id}/edit', [EventController::class, 'edit'])->name('events.edit');
     Route::put('/events/{id}', [EventController::class, 'update'])->name('events.update');
+    Route::delete('/events/{id}', [EventController::class, 'destroy'])->name('events.destroy');
     Route::patch('/events/{id}/toggle', [EventController::class, 'toggleStatus'])->name('events.toggle');
 
     // Otras rutas
@@ -124,6 +129,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/participants', [ParticipantController::class, 'index'])->name('participants.index');
 
     // Administración del Sistema
+    Route::get('/users/export', [UserController::class, 'export'])->name('users.export');
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
