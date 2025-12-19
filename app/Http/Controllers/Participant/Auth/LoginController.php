@@ -36,6 +36,9 @@ class LoginController extends Controller
             $user = \App\Models\Participante::where('par_correo', $email)->first();
 
             if ($user) {
+                // Registrar último acceso
+                $user->update(['last_login_at' => now()]);
+
                 Auth::guard('participant')->login($user);
                 $request->session()->regenerate();
                 // Redirigir SIEMPRE al dashboard, evitando bucles intended
@@ -49,6 +52,10 @@ class LoginController extends Controller
         }
 
         if (Auth::guard('participant')->attempt(['par_correo' => $request->par_correo, 'password' => $request->password], $request->filled('remember'))) {
+            // Registrar último acceso
+            $user = Auth::guard('participant')->user();
+            $user->update(['last_login_at' => now()]);
+
             $request->session()->regenerate();
             // Redirigir SIEMPRE al dashboard
             return redirect()->route('participant.dashboard');

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Participante;
 use App\Models\Inscripcion;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 
 class UserController extends Controller
 {
@@ -102,7 +103,6 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'par_login' => 'required|string|unique:participante,par_login',
             'par_nombre' => 'required|string',
             'par_apellido' => 'required|string',
             'par_correo' => 'required|email|unique:participante,par_correo',
@@ -111,31 +111,32 @@ class UserController extends Controller
             'par_facultad' => 'nullable|string',
             'par_departamento' => 'nullable|string',
             'par_sede' => 'nullable|string',
+            'par_cargo' => 'required|string',
+            'par_anexo' => 'required|string',
         ], [
-            'par_login.unique' => 'El login ya existe en el sistema.',
             'par_correo.unique' => 'El correo electrónico ya está registrado.',
             'par_password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+            'par_cargo.required' => 'El cargo es obligatorio.',
+            'par_anexo.required' => 'El anexo es obligatorio.',
         ]);
 
         $usuario = new Participante();
-        $usuario->par_login = $validated['par_login'];
+        $usuario->par_login = $validated['par_correo']; // Login es el correo
         $usuario->par_nombre = $validated['par_nombre'];
         $usuario->par_apellido = $validated['par_apellido'];
         $usuario->par_correo = $validated['par_correo'];
-        $usuario->par_password = $validated['par_password']; // Note: Should probably hash this if system uses hashed passwords. But model says getAuthPassword returns par_password directly? Assuming plain text for now as per legacy or bcrypt if model handles it. Safe bet is bcrypt but if existing ones are plain... I'll use simple assignment for now to match probable existing logic, or Hash::make if I see imports.
-        // Wait, Participante model extends Authenticatable. Usually password should be hashed.
-        // Checking AuthController might reveal if it uses Hash::check. But line 195 login in view sends password.
-        // Let's assume Hash::make is safer, but if legacy system uses plain text...
-        // I will Use simple assignment for now to be safe with existing data, or check AuthController later.
-        // Wait, standard Laravel uses Hash. But this looks like a custom legacy DB 'participante'.
-        // I'll stick to direct assignment for now, but really I should check.
+        $usuario->par_password = Hash::make($validated['par_password']);
         $usuario->par_perfil = $validated['par_perfil'];
+        $usuario->par_cargo = $validated['par_cargo'];
+        $usuario->par_anexo = $validated['par_anexo'];
         $usuario->par_facultad = $validated['par_facultad'];
         $usuario->par_departamento = $validated['par_departamento'];
         $usuario->par_sede = $validated['par_sede'];
+        $usuario->fecha_registro = now();
+        $usuario->last_login_at = null; // Explícitamente null al crear
         $usuario->save();
 
-        return redirect()->route('admin.users.index')->with('success', 'Usuario creado exitosamente.');
+        return redirect()->route('admin.users.index')->with('success', 'Usuario creado exitosamente. Login: ' . $usuario->par_login);
     }
 
     public function edit($id)
@@ -156,7 +157,14 @@ class UserController extends Controller
             'par_facultad' => 'nullable|string',
             'par_departamento' => 'nullable|string',
             'par_sede' => 'nullable|string',
+            'par_cargo' => 'required|string',
+            'par_anexo' => 'required|string',
             'par_password' => 'nullable|string|min:6', // Optional on update
+        ], [
+            'par_correo.unique' => 'El correo electrónico ya está en uso por otro usuario.',
+            'par_password.min' => 'La contraseña debe tener al menos 6 caracteres.',
+            'par_cargo.required' => 'El cargo es obligatorio.',
+            'par_anexo.required' => 'El anexo es obligatorio.',
         ]);
 
         $usuario->par_nombre = $validated['par_nombre'];
@@ -166,9 +174,11 @@ class UserController extends Controller
         $usuario->par_facultad = $validated['par_facultad'];
         $usuario->par_departamento = $validated['par_departamento'];
         $usuario->par_sede = $validated['par_sede'];
+        $usuario->par_cargo = $validated['par_cargo'];
+        $usuario->par_anexo = $validated['par_anexo'];
 
         if ($request->filled('par_password')) {
-            $usuario->par_password = $validated['par_password'];
+            $usuario->par_password = Hash::make($validated['par_password']);
         }
 
         $usuario->save();
@@ -185,5 +195,65 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return redirect()->route('admin.users.index')->with('error', 'No se puede eliminar el usuario. Puede tener registros asociados.');
         }
+    }
+
+    // 📧 Reenviar Credenciales
+    public function resendCredentials($id)
+    {
+        $usuario = Participante::findOrFail($id);
+
+        if (!$usuario->par_correo) {
+            return back()->with('error', 'El usuario no tiene un correo electrónico registrado.');
+        }
+
+        // Generar contraseña aleatoria
+        $newPassword = \Illuminate\Support\Str::random(10);
+
+        // Guardar nueva contraseña (hasheada)
+        $usuario->par_password = Hash::make($newPassword);
+        $usuario->save();
+
+        // Enviar Correo (con la contraseña plana)
+        try {
+            \Illuminate\Support\Facades\Mail::to($usuario->par_correo)
+                ->send(new \App\Mail\UserCredentialsMail($usuario->par_nombre, $usuario->par_correo, $newPassword));
+
+            return back()->with('success', 'Credenciales restablecidas y enviadas por correo exitosamente.');
+        } catch (\Exception $e) {
+            \Illuminate\Support\Facades\Log::error('Error al enviar credenciales: ' . $e->getMessage());
+            return back()->with('error', 'Error al enviar el correo: ' . $e->getMessage());
+        }
+    }
+
+    // 🗑️ Acción Masiva: Eliminar
+    public function massDestroy(Request $request)
+    {
+        $ids = $request->input('ids');
+
+        if (empty($ids)) {
+            return back()->with('error', 'No has seleccionado ningún usuario.');
+        }
+
+        $exitos = 0;
+        $errores = 0;
+
+        foreach ($ids as $id) {
+            try {
+                $usuario = Participante::findOrFail($id);
+                // Validar que no sea uno mismo?
+                // if ($usuario->par_login === auth()->user()->par_login) continue; 
+
+                $usuario->delete();
+                $exitos++;
+            } catch (\Exception $e) {
+                $errores++;
+            }
+        }
+
+        if ($errores > 0) {
+            return back()->with('warning', "Se eliminaron $exitos usuarios. $errores no se pudieron eliminar por tener registros asociados.");
+        }
+
+        return back()->with('success', "$exitos usuarios eliminados exitosamente.");
     }
 }

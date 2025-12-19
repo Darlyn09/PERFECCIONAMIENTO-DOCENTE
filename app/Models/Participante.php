@@ -27,7 +27,13 @@ class Participante extends Authenticatable
         'par_facultad',
         'par_departamento',
         'par_sede',
-        'fecha_registro'
+
+        'fecha_registro',
+        'last_login_at'
+    ];
+
+    protected $casts = [
+        'last_login_at' => 'datetime',
     ];
 
     public function getAuthPassword()

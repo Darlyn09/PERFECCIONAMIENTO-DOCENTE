@@ -127,10 +127,14 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/users', [UserController::class, 'index'])->name('users.index');
     Route::get('/users/create', [UserController::class, 'create'])->name('users.create');
     Route::post('/users', [UserController::class, 'store'])->name('users.store');
+
     Route::get('/users/{id}/edit', [UserController::class, 'edit'])->name('users.edit');
     Route::put('/users/{id}', [UserController::class, 'update'])->name('users.update');
+    Route::post('/users/{id}/resend', [UserController::class, 'resendCredentials'])->name('users.resend');
     Route::delete('/users/{id}', [UserController::class, 'destroy'])->name('users.destroy');
     Route::get('/users/{id}', [UserController::class, 'show'])->name('users.show');
+
+    Route::post('/users/mass-destroy', [UserController::class, 'massDestroy'])->name('users.mass_destroy');
     Route::get('/certificates/download/{login}/{course}', [CertificateController::class, 'download'])->name('certificates.download');
     Route::get('/roles', [RoleController::class, 'index'])->name('roles.index');
     Route::get('/settings', [SettingController::class, 'index'])->name('settings.index');

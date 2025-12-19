@@ -3,7 +3,51 @@
 @section('title', 'Usuarios')
 
 @section('content')
-    <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 -m-4 p-4 sm:p-6">
+    <div x-data="{ 
+                selected: [], 
+                allSelected: false,
+                toggleAll() {
+                    this.allSelected = !this.allSelected;
+                    if (this.allSelected) {
+                        this.selected = {{ $usuarios->pluck('par_login')->toJson() }};
+                    } else {
+                        this.selected = [];
+                    }
+                }
+            }" class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 -m-4 p-4 sm:p-6 relative">
+
+        {{-- Barras de Acción Flotante --}}
+        <div x-show="selected.length > 0" x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 translate-y-10" x-transition:enter-end="opacity-100 translate-y-0"
+            class="fixed bottom-6 left-1/2 transform -translate-x-1/2 bg-slate-900 text-white px-6 py-3 rounded-2xl shadow-2xl z-50 flex items-center gap-4 border border-slate-700">
+
+            <span class="text-sm font-medium">
+                <span x-text="selected.length" class="font-bold text-amber-400"></span> usuarios seleccionados
+            </span>
+
+            <div class="h-6 w-px bg-white/20"></div>
+
+            <form action="{{ route('admin.users.mass_destroy') }}" method="POST"
+                onsubmit="return confirm('¿Estás seguro de eliminar los usuarios seleccionados? Esta acción no se puede deshacer.');">
+                @csrf
+                {{-- Solución Alpine para array en form --}}
+                <template x-for="id in selected" :key="id">
+                    <input type="hidden" name="ids[]" :value="id">
+                </template>
+
+                <button type="submit"
+                    class="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold transition-colors flex items-center shadow-lg shadow-red-500/30">
+                    <i class="fa fa-trash-alt mr-2"></i> Eliminar
+                </button>
+            </form>
+
+            <div class="h-6 w-px bg-white/20"></div>
+
+            <button @click="selected = []; allSelected = false"
+                class="text-slate-400 hover:text-white text-sm transition-colors">
+                Cancelar
+            </button>
+        </div>
         {{-- Header --}}
         <div class="mb-4 sm:mb-6">
             {{-- Botón Volver Destacado --}}
@@ -231,6 +275,10 @@
                     <table class="w-full">
                         <thead>
                             <tr class="bg-slate-50 border-b border-slate-200">
+                                <th class="px-6 py-4 text-center w-10">
+                                    <input type="checkbox" @click="toggleAll()" :checked="allSelected"
+                                        class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer">
+                                </th>
                                 <th
                                     class="px-6 py-4 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider">
                                     Usuario</th>
@@ -242,6 +290,9 @@
                                     Cargo / Facultad</th>
                                 <th
                                     class="px-6 py-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                                    Último Acceso</th>
+                                <th
+                                    class="px-6 py-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
                                     Estado</th>
                                 <th
                                     class="px-6 py-4 text-center text-xs font-semibold text-slate-500 uppercase tracking-wider">
@@ -251,6 +302,12 @@
                         <tbody class="divide-y divide-slate-100">
                             @forelse($usuarios as $u)
                                 <tr class="hover:bg-slate-50/50 transition-colors group">
+                                    <td class="px-6 py-4 text-center">
+                                        <input type="checkbox" 
+                                               value="{{ $u->par_login }}" 
+                                               x-model="selected"
+                                               class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-4 h-4 cursor-pointer">
+                                    </td>
                                     <td class="px-6 py-4">
                                         <div class="flex items-center">
                                             <div
@@ -297,6 +354,18 @@
                                                 <span class="text-slate-400 text-sm">—</span>
                                             @endif
                                         </div>
+                                    </td>
+                                    <td class="px-6 py-4 text-center">
+                                        @if($u->last_login_at)
+                                            <span class="text-xs font-semibold text-slate-600">
+                                                {{ $u->last_login_at->format('d/m/Y') }}
+                                            </span>
+                                            <span class="block text-xs text-slate-400">
+                                                {{ $u->last_login_at->format('H:i') }}
+                                            </span>
+                                        @else
+                                            <span class="text-xs text-slate-400 italic">Nunca</span>
+                                        @endif
                                     </td>
                                     <td class="px-6 py-4 text-center">
                                         <span

@@ -93,7 +93,8 @@
                                     <select name="par_perfil" id="par_perfil"
                                         class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm"
                                         required>
-                                        <option value="participante" {{ old('par_perfil') == 'participante' ? 'selected' : '' }}>Participante</option>
+                                        <option value="par" {{ old('par_perfil') == 'par' ? 'selected' : '' }}>Participante
+                                        </option>
                                         <option value="admin" {{ old('par_perfil') == 'admin' ? 'selected' : '' }}>
                                             Administrador</option>
                                         <option value="relator" {{ old('par_perfil') == 'relator' ? 'selected' : '' }}>Relator
@@ -133,6 +134,27 @@
                                     <input type="email" name="par_correo" id="par_correo" value="{{ old('par_correo') }}"
                                         class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm"
                                         required>
+                                </div>
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide"
+                                        for="par_cargo">
+                                        Cargo <span class="text-amber-500">*</span>
+                                    </label>
+                                    <input type="text" name="par_cargo" id="par_cargo" value="{{ old('par_cargo') }}"
+                                        class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm"
+                                        required placeholder="Ej: Docente, Administrativo">
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                                <div class="space-y-2">
+                                    <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide"
+                                        for="par_anexo">
+                                        Anexo <span class="text-amber-500">*</span>
+                                    </label>
+                                    <input type="text" name="par_anexo" id="par_anexo" value="{{ old('par_anexo') }}"
+                                        class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm"
+                                        required placeholder="Ej: 1234">
                                 </div>
                                 <div class="space-y-2">
                                     <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide"
