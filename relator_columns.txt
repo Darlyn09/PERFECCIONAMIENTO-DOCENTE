@@ -1,0 +1,7 @@
+[{"Field":"rel_login","Type":"varchar(50)",
+"Null":"NO","Key":"PRI","Default":null,"Extra":""},{"Field":"rel_nombre","Type":"text","Null":"NO","Key":"",
+"Default":null,"Extra":""},{"Field":"rel_apellido","Type":"text","Null":"NO","Key":"","Default":null,"Extra":""},
+{"Field":"rel_correo","Type":"text","Null":"NO","Key":"","Default":null,"Extra":""},
+{"Field":"rel_facultad","Type":"text","Null":"NO","Key":"","Default":null,"Extra":""},
+{"Field":"rel_fono","Type":"text","Null":"NO","Key":"","Default":null,"Extra":""},
+{"Field":"rel_cargo","Type":"text","Null":"NO","Key":"","Default":null,"Extra":""}]

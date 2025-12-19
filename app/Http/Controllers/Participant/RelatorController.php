@@ -1,0 +1,202 @@
+<?php
+
+namespace App\Http\Controllers\Participant;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\Curso;
+use App\Models\Inscripcion;
+use App\Models\Informacion;
+use App\Models\Relator;
+
+class RelatorController extends Controller
+{
+    /**
+     * Muestra la lista de cursos del relator autenticado (Participante).
+     */
+    public function index()
+    {
+        $participant = Auth::guard('participant')->user();
+
+        if (!$participant || !$participant->relator) {
+            abort(403, 'Acceso denegado. No se encontró un perfil de relator asociado a su cuenta.');
+        }
+
+        // Obtener EVENTOS que contienen cursos dictados por este relator
+        // Agrupamos por eventos para la vista jerárquica
+        $rel_login = $participant->relator->rel_login;
+
+        $eventos = \App\Models\Evento::whereHas('cursos.programas', function ($q) use ($rel_login) {
+            $q->where('rel_login', $rel_login);
+        })
+            ->with([
+                'cursos' => function ($q) use ($rel_login) {
+                    // Filtrar solo los cursos que este relator dicta dentro del evento
+                    $q->whereHas('programas', function ($q2) use ($rel_login) {
+                        $q2->where('rel_login', $rel_login);
+                    })->with([
+                                'programas' => function ($q3) use ($rel_login) {
+                            $q3->where('rel_login', $rel_login); // Cargar solo los programas del relator
+                        }
+                            ]);
+                }
+            ])
+            ->orderBy('eve_id', 'desc')
+            ->paginate(5);
+
+        return view('participant.relator.my-courses', compact('eventos'));
+    }
+
+    /**
+     * Muestra el formulario para crear un nuevo curso.
+     */
+    public function create()
+    {
+        $participant = Auth::guard('participant')->user();
+
+        if (!$participant || !$participant->relator) {
+            abort(403, 'Acceso denegado.');
+        }
+
+        $eventos = \App\Models\Evento::where('eve_estado', 1)->orderBy('eve_id', 'desc')->get();
+        $categorias = \App\Models\Categoria::all();
+
+        return view('participant.relator.create_course', compact('eventos', 'categorias'));
+    }
+
+    /**
+     * Almacena un nuevo curso y crea la primera sesión (programa) para el relator.
+     */
+    public function store(Request $request)
+    {
+        $participant = Auth::guard('participant')->user();
+
+        if (!$participant || !$participant->relator) {
+            abort(403, 'Acceso denegado.');
+        }
+
+        $validated = $request->validate([
+            'cur_nombre' => 'required|max:255',
+            'eve_id' => 'required|exists:evento,eve_id',
+            'cur_categoria' => 'required|exists:categoria,cur_categoria',
+            'cur_horas' => 'required|numeric|min:1',
+            'cur_asistencia' => 'required|numeric|min:0|max:100',
+            'cur_modalidad' => 'required',
+            'cur_fecha_inicio' => 'required|date',
+            'cur_fecha_termino' => 'required|date|after_or_equal:cur_fecha_inicio',
+            'pro_horario' => 'nullable|string|max:255',
+            'pro_lugar' => 'nullable|string|max:255',
+            'cur_link' => 'nullable|url|max:255',
+            'cur_descripcion' => 'required',
+            'cur_objetivos' => 'required',
+            'cur_contenidos' => 'required',
+            'cur_metodologias' => 'required',
+            'cur_bibliografia' => 'required',
+            'cur_aprobacion' => 'required',
+        ]);
+
+        // 1. Crear el Curso
+        $curso = new Curso();
+        $curso->eve_id = $request->eve_id;
+        $curso->cur_nombre = $request->cur_nombre;
+        $curso->cur_descripcion = $request->cur_descripcion;
+        $curso->cur_objetivos = $request->cur_objetivos;
+        $curso->cur_contenidos = $request->cur_contenidos;
+        $curso->cur_metodologias = $request->cur_metodologias;
+        $curso->cur_bibliografia = $request->cur_bibliografia;
+        $curso->cur_aprobacion = $request->cur_aprobacion;
+        $curso->cur_categoria = $request->cur_categoria;
+        $curso->cur_horas = $request->cur_horas;
+        $curso->cur_asistencia = $request->cur_asistencia;
+        $curso->cur_modalidad = $request->cur_modalidad;
+        $curso->cur_fecha_inicio = $request->cur_fecha_inicio;
+        $curso->cur_fecha_termino = $request->cur_fecha_termino;
+        $curso->cur_link = $request->cur_link; // Guardar link
+        $curso->cur_estado = 1; // Activo por defecto
+        $curso->save();
+
+        // 2. Crear el Programa (Sesión) asociado al Curso y al Relator
+        $programa = new \App\Models\Programa();
+        $programa->cur_id = $curso->cur_id;
+        $programa->rel_login = $participant->relator->rel_login;
+        $programa->pro_inicia = $request->cur_fecha_inicio; // Usamos las mismas fechas para la primera sesión
+        $programa->pro_finaliza = $request->cur_fecha_termino;
+        $programa->pro_horario = $request->pro_horario;
+        $programa->pro_lugar = $request->pro_lugar; // Guardar ubicación texto
+        $programa->pro_colaboradores = ''; // Valor por defecto
+
+        // Completar campos obligatorios de fechas y horas
+        $programa->pro_abre = $request->cur_fecha_inicio;
+        $programa->pro_cierra = $request->cur_fecha_termino;
+        $programa->pro_hora_inicio = '09:00:00';
+        $programa->pro_hora_termino = '18:00:00';
+
+        // Valores por defecto
+        $programa->pro_cupos = 100; // Valor razonable por defecto
+        $programa->save();
+
+        return redirect()->route('participant.relator.my_courses')->with('success', 'Curso y sesión creados correctamente.');
+    }
+
+    /**
+     * Muestra la lista de alumnos inscritos en un curso específico.
+     */
+    public function students($curso_id)
+    {
+        $participant = Auth::guard('participant')->user();
+
+        if (!$participant || !$participant->relator) {
+            abort(403, 'Acceso denegado.');
+        }
+
+        // Verificar que el curso pertenece al relator (a través de sus programas)
+        $programas = $participant->relator->programas()->where('cur_id', $curso_id)->get();
+
+        if ($programas->isEmpty()) {
+            abort(403, 'No tiene permiso para gestionar este curso.');
+        }
+
+        $curso = Curso::findOrFail($curso_id);
+
+        // Obtener inscripciones SOLO de los programas del relator
+        $programasIds = $programas->pluck('pro_id');
+
+        $inscripciones = Inscripcion::with(['participante', 'informacion'])
+            ->whereIn('pro_id', $programasIds)
+            ->get()
+            ->groupBy('pro_id');
+
+        return view('participant.relator.course_students', compact('curso', 'inscripciones', 'programas'));
+
+
+    }
+
+    /**
+     * Aprueba o desaprueba a un alumno (actualiza inf_estado).
+     */
+    public function toggleApproval(Request $request, $ins_id)
+    {
+        $request->validate([
+            'estado' => 'required|boolean',
+        ]);
+
+        $inscripcion = Inscripcion::findOrFail($ins_id);
+
+        $participant = Auth::guard('participant')->user();
+
+        // Verificar permisos (el curso debe ser del relator)
+        $esCursoDelRelator = $participant->relator->cursos()->where('curso.cur_id', $inscripcion->cur_id)->exists();
+
+        if (!$esCursoDelRelator) {
+            abort(403, 'No tiene permiso para gestionar este curso.');
+        }
+
+        // Buscar o crear registro en informacion
+        $informacion = Informacion::firstOrNew(['ins_id' => $ins_id]);
+        $informacion->inf_estado = $request->estado ? 1 : 0;
+        $informacion->save();
+
+        return back()->with('success', 'Estado de aprobación actualizado correctamente.');
+    }
+}
