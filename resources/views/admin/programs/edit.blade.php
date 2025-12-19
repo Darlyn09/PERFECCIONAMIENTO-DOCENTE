@@ -178,11 +178,29 @@
                             <div class="space-y-2">
                                 <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide"
                                     for="pro_colaboradores">
-                                    Colaboradores
+                                    Colaboradores (Texto Libre)
                                 </label>
                                 <input type="text" name="pro_colaboradores" id="pro_colaboradores"
                                     value="{{ old('pro_colaboradores', $programa->pro_colaboradores) }}"
                                     class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm">
+                            </div>
+
+                            <div class="col-span-1 sm:col-span-2 space-y-2">
+                                <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide" for="relatores">
+                                    Docentes Colaboradores (Selección Múltiple)
+                                </label>
+                                <div class="relative">
+                                    <select name="relatores[]" id="relatores" multiple
+                                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm h-32">
+                                        @foreach($relatores as $relator)
+                                            <option value="{{ $relator->rel_login }}" 
+                                                {{ (collect(old('relatores', $programa->relatores->pluck('rel_login')))->contains($relator->rel_login)) ? 'selected' : '' }}>
+                                                {{ $relator->rel_nombre }} {{ $relator->rel_apellido }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <p class="text-xs text-slate-400 mt-1">Mantén presionado Ctrl (Windows) o Command (Mac) para seleccionar varios.</p>
+                                </div>
                             </div>
                         </div>
 

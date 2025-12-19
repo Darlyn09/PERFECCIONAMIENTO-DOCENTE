@@ -210,16 +210,44 @@
                                             </div>
 
                                             @if($programa->relator || $programa->rel_login)
-                                                <div class="mt-4 pt-4 border-t border-slate-100 flex items-center">
-                                                    <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 mr-3 text-xs">
-                                                        <i class="fas fa-user"></i>
+                                                <div class="mt-4 pt-4 border-t border-slate-100 flex items-start gap-3">
+                                                    <div class="w-8 h-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-500 shrink-0 text-xs">
+                                                        <i class="fas fa-user-tie"></i>
                                                     </div>
                                                     <div>
-                                                        <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Relator</p>
+                                                        <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Relator Principal</p>
                                                         <p class="text-sm font-semibold text-slate-700">
-                                                            {{ $programa->relator->rel_nombre ?? $programa->rel_login }}
+                                                            {{ $programa->relator->rel_nombre ?? $programa->rel_login }} 
                                                             {{ $programa->relator->rel_apellido ?? '' }}
                                                         </p>
+                                                    </div>
+                                                </div>
+                                            @endif
+
+                                            @if($programa->pro_colaboradores || $programa->relatores->count() > 0)
+                                                <div class="mt-3 flex items-start gap-3">
+                                                    <div class="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 shrink-0 text-xs">
+                                                        <i class="fas fa-users"></i>
+                                                    </div>
+                                                    <div>
+                                                        <p class="text-[10px] uppercase font-bold text-slate-400 tracking-wider">Colaboradores</p>
+                                                        
+                                                        @if($programa->pro_colaboradores)
+                                                            <p class="text-xs text-slate-600 mb-1 leading-tight">
+                                                                {{ $programa->pro_colaboradores }}
+                                                            </p>
+                                                        @endif
+
+                                                        @if($programa->relatores->count() > 0)
+                                                            <div class="flex flex-col gap-1 mt-1">
+                                                                @foreach($programa->relatores as $docente)
+                                                                    <span class="text-xs text-slate-700 font-medium flex items-center">
+                                                                        <i class="fas fa-check text-[10px] text-blue-500 mr-1.5"></i>
+                                                                        {{ $docente->rel_nombre }} {{ $docente->rel_apellido }}
+                                                                    </span>
+                                                                @endforeach
+                                                            </div>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             @endif

@@ -199,7 +199,17 @@
                                             {{ $programa->inscripciones_count }} <span class="text-slate-400 font-normal">/ {{ $programa->pro_cupos }}</span>
                                         </td>
                                         <td class="px-6 py-3 text-right">
-                                            <div class="flex items-center justify-end gap-2">
+                                            <div class="flex items-center justify-end gap-1">
+                                                <a href="{{ route('admin.programs.teachers', $programa->pro_id) }}" class="p-1.5 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="Docentes">
+                                                    <i class="fa fa-chalkboard-teacher text-xs"></i>
+                                                </a>
+                                                <a href="{{ route('admin.programs.grades', $programa->pro_id) }}" class="p-1.5 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded transition-colors" title="Calificaciones">
+                                                    <i class="fa fa-user-graduate text-xs"></i>
+                                                </a>
+                                                <a href="{{ route('admin.programs.export', $programa->pro_id) }}" class="p-1.5 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded transition-colors" title="Descargar Nómina">
+                                                    <i class="fa fa-file-excel text-xs"></i>
+                                                </a>
+                                                <div class="w-px h-4 bg-slate-200 mx-1"></div>
                                                 <a href="{{ route('admin.programs.edit', $programa->pro_id) }}" class="px-2 py-1 bg-slate-800 text-white text-[10px] font-bold rounded hover:bg-blue-700 transition-colors">Editar</a>
                                                 <form action="{{ route('admin.programs.destroy', $programa->pro_id) }}" method="POST" class="inline" id="del-{{ $programa->pro_id }}">
                                                     @csrf @method('DELETE')

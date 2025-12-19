@@ -28,11 +28,20 @@ class Relator extends Model
     ];
 
     /**
-     * Relación: Un relator tiene muchos programas (sesiones)
+     * Relación: Un relator tiene muchos programas (sesiones) - COMO TITULAR
      */
     public function programas()
     {
         return $this->hasMany(Programa::class, 'rel_login', 'rel_login');
+    }
+
+    /**
+     * Relación: Un relator participa en muchos programas - COMO COLABORADOR/ASIGNADO (Req 59)
+     */
+    public function programasAsignados()
+    {
+        return $this->belongsToMany(Programa::class, 'programa_relator', 'rel_login', 'pro_id')
+            ->withTimestamps();
     }
 
     /**

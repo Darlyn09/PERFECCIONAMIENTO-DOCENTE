@@ -101,6 +101,18 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::delete('/programs/{id}', [ProgramController::class, 'destroy'])->name('programs.destroy');
     Route::get('/programs/{id}/export', [ProgramController::class, 'exportParticipants'])->name('programs.export');
 
+    // Gestión Docentes Programa
+    Route::get('/programs/{id}/teachers', [ProgramController::class, 'teachers'])->name('programs.teachers');
+    Route::post('/programs/{id}/assign-teacher', [ProgramController::class, 'assignTeacher'])->name('programs.assign_teacher');
+    Route::delete('/programs/{id}/detach-teacher/{relLogin}', [ProgramController::class, 'detachTeacher'])->name('programs.detach_teacher');
+    Route::post('/programs/{id}/import-teachers', [ProgramController::class, 'importTeachers'])->name('programs.import_teachers');
+
+    // Gestión Calificaciones Programa
+    Route::get('/programs/{id}/grades', [ProgramController::class, 'grades'])->name('programs.grades');
+    Route::post('/programs/{id}/update-grades', [ProgramController::class, 'updateGrades'])->name('programs.update_grades');
+    Route::post('/programs/{id}/import-grades', [ProgramController::class, 'importGrades'])->name('programs.import_grades');
+    Route::get('/programs/{id}/grades-template', [ProgramController::class, 'downloadGradesTemplate'])->name('programs.grades_template');
+
     // Rutas Relatores (Teachers - Legacy)
     // Route::resource('teachers', TeacherController::class); // Se mantiene si es necesario por retrocompatibilidad momentanea
 

@@ -51,4 +51,13 @@ class Programa extends Model
     {
         return $this->hasMany(Inscripcion::class, 'pro_id', 'pro_id');
     }
+
+    /**
+     * Relación: Múltiples docentes asignados al programa (Req 59)
+     */
+    public function relatores()
+    {
+        return $this->belongsToMany(Relator::class, 'programa_relator', 'pro_id', 'rel_login')
+            ->withTimestamps();
+    }
 }
