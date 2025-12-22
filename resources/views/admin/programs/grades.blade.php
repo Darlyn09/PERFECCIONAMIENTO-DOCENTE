@@ -31,10 +31,10 @@
                     <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
                         <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex justify-between items-center">
                             <h2 class="font-bold text-slate-800">
-                                <i class="fa fa-user-graduate text-indigo-500 mr-2"></i> Listado de Alumnos
+                                <i class="fa fa-user-graduate text-blue-institutional mr-2"></i> Listado de Alumnos
                             </h2>
                             <button type="submit"
-                                class="inline-flex items-center px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg shadow-lg shadow-blue-500/30 transition-all">
+                                class="inline-flex items-center px-5 py-2 bg-blue-institutional hover:bg-blue-900 text-white font-bold rounded-lg shadow-lg shadow-blue-900/30 transition-all">
                                 <i class="fa fa-save mr-2"></i> Guardar Cambios
                             </button>
                         </div>
@@ -61,13 +61,13 @@
                                             <td class="px-6 py-3">
                                                 <input type="number" step="0.1" min="1" max="7" name="notas[{{ $ins->ins_id }}]"
                                                     value="{{ $ins->ins_nota }}"
-                                                    class="w-full text-center border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 font-bold text-slate-700"
+                                                    class="w-full text-center border-slate-200 rounded-lg focus:ring-blue-institutional focus:border-blue-institutional font-bold text-slate-700"
                                                     placeholder="-">
                                             </td>
                                             <td class="px-6 py-3">
                                                 <input type="number" step="1" min="0" max="100"
                                                     name="asistencias[{{ $ins->ins_id }}]" value="{{ $ins->ins_asistencia }}"
-                                                    class="w-full text-center border-slate-200 rounded-lg focus:ring-blue-500 focus:border-blue-500 text-slate-700"
+                                                    class="w-full text-center border-slate-200 rounded-lg focus:ring-blue-institutional focus:border-blue-institutional text-slate-700"
                                                     placeholder="%">
                                             </td>
                                             <td class="px-6 py-3 text-center">
@@ -99,7 +99,7 @@
             {{-- Columna Derecha: Importación --}}
             <div class="space-y-6">
                 <div
-                    class="bg-gradient-to-br from-indigo-900 to-slate-900 rounded-2xl shadow-xl p-6 text-white border border-indigo-700">
+                    class="bg-gradient-to-br from-blue-institutional to-slate-900 rounded-2xl shadow-xl p-6 text-white border border-blue-900">
                     <h3 class="font-bold text-lg mb-2 flex items-center gap-2">
                         <i class="fa fa-file-excel text-emerald-400"></i> Carga Masiva
                     </h3>

@@ -27,9 +27,9 @@
 
         <!-- Sidebar -->
         <div :class="sidebarOpen ? 'translate-x-0 ease-out' : '-translate-x-full ease-in'"
-            class="fixed flex flex-col top-0 left-0 w-64 bg-blue-900 h-full border-r border-blue-800 shadow-xl z-30 transition-transform duration-300 transform lg:translate-x-0">
-            <div class="flex items-center justify-center h-14 border-b border-blue-800 bg-blue-900">
-                <div class="font-bold text-xl uppercase tracking-wider text-yellow-400">SPD Admin</div>
+            class="fixed flex flex-col top-0 left-0 w-64 bg-blue-institutional h-full border-r border-blue-800 shadow-xl z-30 transition-transform duration-300 transform lg:translate-x-0">
+            <div class="flex items-center justify-center h-14 border-b border-blue-800 bg-blue-institutional">
+                <div class="font-bold text-xl uppercase tracking-wider text-gold-institutional">SPD Admin</div>
             </div>
 
             <div class="overflow-y-auto overflow-x-hidden flex-grow">
@@ -38,7 +38,7 @@
                     <!-- Dashboard -->
                     <li>
                         <a href="{{ route('admin.dashboard') }}"
-                            class="relative flex flex-row items-center h-11 focus:outline-none hover:bg-blue-800 text-blue-100 hover:text-yellow-300 border-l-4 border-transparent hover:border-yellow-400 pr-6 transition-colors duration-200">
+                            class="relative flex flex-row items-center h-11 focus:outline-none hover:bg-blue-800 text-blue-100 hover:text-gold-institutional border-l-4 border-transparent hover:border-gold-institutional pr-6 transition-colors duration-200">
                             <span class="inline-flex justify-center items-center ml-4">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"
                                     xmlns="http://www.w3.org/2000/svg">
@@ -47,7 +47,7 @@
                                     </path>
                                 </svg>
                             </span>
-                            <span class="ml-2 text-sm tracking-wide truncate">Dashboard</span>
+                            <span class="ml-2 text-sm tracking-wide truncate">Inicio</span>
                         </a>
                     </li>
 

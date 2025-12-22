@@ -13,7 +13,8 @@
                 </a>
                 <h1 class="text-2xl font-bold text-slate-800">Cuerpo Docente del Programa</h1>
                 <p class="text-slate-500">Gestión de profesores asignados a la oferta #{{ $programa->pro_id }} de
-                    {{ $programa->curso->cur_nombre }}</p>
+                    {{ $programa->curso->cur_nombre }}
+                </p>
             </div>
         </div>
 
@@ -23,9 +24,9 @@
                 <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
                     <div class="p-6 border-b border-slate-100 flex justify-between items-center">
                         <h2 class="font-bold text-slate-800 flex items-center gap-2">
-                            <i class="fa fa-chalkboard-teacher text-blue-500"></i> Docentes Asignados
+                            <i class="fa fa-chalkboard-teacher text-blue-institutional"></i> Docentes Asignados
                         </h2>
-                        <span class="bg-blue-100 text-blue-700 font-bold px-3 py-1 rounded-full text-xs">
+                        <span class="bg-blue-50 text-blue-institutional font-bold px-3 py-1 rounded-full text-xs">
                             {{ $programa->relatores->count() }} Docentes
                         </span>
                     </div>
@@ -41,7 +42,8 @@
                                         </div>
                                         <div>
                                             <h4 class="font-bold text-slate-800">{{ $relator->rel_nombre }}
-                                                {{ $relator->rel_apellido }}</h4>
+                                                {{ $relator->rel_apellido }}
+                                            </h4>
                                             <p class="text-sm text-slate-500">{{ $relator->rel_correo }}</p>
                                         </div>
                                     </div>
@@ -80,8 +82,9 @@
                         <div class="mb-4">
                             <label class="block text-sm font-bold text-slate-700 mb-2">Seleccionar Docente</label>
                             <select name="rel_login"
-                                class="w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                class="w-full rounded-xl border-slate-300 shadow-sm focus:border-blue-institutional focus:ring-blue-institutional">
                                 <option value="">-- Seleccione --</option>
+                                <option disabled>──────────</option>
                                 @foreach($relatoresDisponibles as $rel)
                                     <option value="{{ $rel->rel_login }}">{{ $rel->rel_nombre }} {{ $rel->rel_apellido }}
                                         ({{ $rel->rel_login }})</option>
@@ -89,7 +92,7 @@
                             </select>
                         </div>
                         <button type="submit"
-                            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-xl transition-colors shadow-lg shadow-blue-500/30">
+                            class="w-full bg-blue-institutional hover:bg-blue-900 text-white font-bold py-2.5 rounded-xl transition-colors shadow-lg shadow-blue-900/30">
                             Asignar
                         </button>
                     </form>
@@ -97,25 +100,26 @@
 
                 {{-- Carga Masiva --}}
                 <div
-                    class="bg-gradient-to-br from-slate-800 to-slate-900 rounded-2xl shadow-lg border border-slate-700 p-6 text-white">
-                    <h3 class="font-bold mb-4 flex items-center gap-2 text-amber-400">
+                    class="bg-gradient-to-br from-blue-institutional to-slate-900 rounded-2xl shadow-lg border border-blue-900 p-6 text-white">
+                    <h3 class="font-bold mb-4 flex items-center gap-2 text-gold-institutional">
                         <i class="fa fa-file-upload"></i> Carga Masiva
                     </h3>
                     <p class="text-sm text-slate-300 mb-4">Sube un archivo CSV con los RUTs (Login) de los docentes en la
-                        primera columna.</p>
+                        primera columna.
+                    </p>
 
                     <form action="{{ route('admin.programs.import_teachers', $programa->pro_id) }}" method="POST"
                         enctype="multipart/form-data">
                         @csrf
                         <input type="file" name="file" accept=".csv,.txt" class="block w-full text-sm text-slate-300
-                                file:mr-4 file:py-2 file:px-4
-                                file:rounded-full file:border-0
-                                file:text-xs file:font-semibold
-                                file:bg-slate-700 file:text-white
-                                hover:file:bg-slate-600 mb-4 cursor-pointer
-                            " />
+                                    file:mr-4 file:py-2 file:px-4
+                                    file:rounded-full file:border-0
+                                    file:text-xs file:font-semibold
+                                    file:bg-slate-700 file:text-white
+                                    hover:file:bg-slate-600 mb-4 cursor-pointer
+                                " />
                         <button type="submit"
-                            class="w-full bg-amber-500 hover:bg-amber-600 text-slate-900 font-bold py-2.5 rounded-xl transition-colors shadow-lg shadow-amber-500/20">
+                            class="w-full bg-gold-institutional hover:bg-yellow-600 text-slate-900 font-bold py-2.5 rounded-xl transition-colors shadow-lg shadow-amber-500/20">
                             Subir Archivo
                         </button>
                     </form>

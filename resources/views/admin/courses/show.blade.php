@@ -21,10 +21,10 @@
         </a>
 
         {{-- Header Dark Hero --}}
-        <div class="relative mb-8 bg-gradient-to-r from-slate-900 via-blue-900 to-indigo-900 rounded-2xl overflow-hidden shadow-2xl p-6 sm:p-8">
+        <div class="relative mb-8 bg-blue-institutional rounded-2xl overflow-hidden shadow-2xl p-6 sm:p-8">
             {{-- Decoración de fondo --}}
             <div class="absolute inset-0 opacity-20">
-                <div class="absolute -right-20 -top-20 w-80 h-80 border-[20px] border-amber-400/30 rounded-full"></div>
+                <div class="absolute -right-20 -top-20 w-80 h-80 border-[20px] border-gold-institutional/30 rounded-full"></div>
                 <div class="absolute -left-16 -bottom-16 w-64 h-64 border-[16px] border-blue-400/20 rounded-full"></div>
             </div>
 
@@ -68,7 +68,7 @@
                         <div>
                             <p class="text-xs text-indigo-300 uppercase font-bold mb-1">Duración</p>
                             <p class="text-white font-bold text-lg">
-                                <i class="far fa-clock text-amber-400 mr-1.5 text-sm"></i>{{ $course->cur_horas ?? 0 }} hrs
+                                <i class="far fa-clock text-gold-institutional mr-1.5 text-sm"></i>{{ $course->cur_horas ?? 0 }} hrs
                             </p>
                         </div>
                         <div>
@@ -142,7 +142,7 @@
                 <div class="bg-white rounded-2xl shadow-xl border border-slate-200 overflow-hidden">
                     <div class="p-6">
                         <h3 class="text-xl font-bold text-slate-800 flex items-center mb-6">
-                            <span class="w-8 h-8 rounded-lg bg-amber-100 flex items-center justify-center mr-3 text-amber-600">
+                            <span class="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center mr-3 text-gold-institutional">
                                 <i class="fas fa-chalkboard"></i>
                             </span>
                             Programas / Sesiones
@@ -153,13 +153,13 @@
                                 @foreach($course->programas as $index => $programa)
                                     <div class="group relative bg-slate-50 rounded-xl p-5 hover:bg-white hover:shadow-md transition-all border border-slate-200">
                                         {{-- Número de sesión --}}
-                                        <div class="absolute -left-3 top-6 w-8 h-8 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-amber-500/30 z-10">
+                                        <div class="absolute -left-3 top-6 w-8 h-8 rounded-xl bg-gold-institutional text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-amber-500/30 z-10">
                                             {{ $index + 1 }}
                                         </div>
                                         
                                         {{-- Botón editar --}}
                                         <a href="{{ route('admin.programs.edit', $programa->pro_id) }}" 
-                                           class="absolute top-4 right-4 p-2 text-slate-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
+                                           class="absolute top-4 right-4 p-2 text-slate-400 hover:text-blue-institutional hover:bg-blue-50 rounded-lg transition-all"
                                            title="Editar programa">
                                             <i class="fas fa-pencil-alt"></i>
                                         </a>
@@ -167,7 +167,7 @@
                                         <div class="ml-6">
                                             <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3">
                                                 <div>
-                                                    <h4 class="font-bold text-slate-800 mb-1 group-hover:text-blue-700 transition-colors">
+                                                    <h4 class="font-bold text-slate-800 mb-1 group-hover:text-blue-institutional transition-colors">
                                                         Sesión {{ $index + 1 }}
                                                     </h4>
                                                     @if($programa->pro_horario)
@@ -182,13 +182,13 @@
                                             <div class="flex flex-wrap gap-2 text-xs font-medium">
                                                 @if($programa->pro_inicia)
                                                     <span class="inline-flex items-center px-2.5 py-1.5 bg-white rounded-lg text-slate-600 border border-slate-200 shadow-sm">
-                                                        <i class="far fa-calendar-alt text-blue-500 mr-1.5"></i>
+                                                        <i class="far fa-calendar-alt text-blue-institutional mr-1.5"></i>
                                                         {{ \Carbon\Carbon::parse($programa->pro_inicia)->format('d/m/Y') }}
                                                     </span>
                                                 @endif
                                                 @if($programa->pro_hora_inicio)
                                                     <span class="inline-flex items-center px-2.5 py-1.5 bg-white rounded-lg text-slate-600 border border-slate-200 shadow-sm">
-                                                        <i class="far fa-clock text-amber-500 mr-1.5"></i>
+                                                        <i class="far fa-clock text-gold-institutional mr-1.5"></i>
                                                         {{ $programa->pro_hora_inicio }}
                                                         @if($programa->pro_hora_termino)
                                                             - {{ $programa->pro_hora_termino }}

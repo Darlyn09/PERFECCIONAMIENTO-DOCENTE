@@ -24,56 +24,8 @@ Route::get('/', function () {
 Route::get('/certificates/verify/{user}/{course}', [App\Http\Controllers\CertificateVerificationController::class, 'verify'])->name('certificates.verify')->middleware('signed');
 Route::get('/certificates/validate/{id}/{hash}', [App\Http\Controllers\CertificateVerificationController::class, 'validateCertificate'])->name('certificates.validate');
 
-Route::get('/debug-now', function () {
-    $now = now();
+// Ruta de verificación eliminada para producción
 
-    echo "<h1>Deep Debug Event Visibility</h1>";
-    echo "<h3>System Status</h3>";
-    echo "<ul>";
-    echo "<li><strong>App Timezone:</strong> " . config('app.timezone') . "</li>";
-    echo "<li><strong>PHP Timezone:</strong> " . date_default_timezone_get() . "</li>";
-    echo "<li><strong>NOW (Carbon):</strong> " . $now->format('Y-m-d H:i:s') . "</li>";
-    echo "<li><strong>NOW (PHP date):</strong> " . date('Y-m-d H:i:s') . "</li>";
-    echo "</ul>";
-
-    echo "<h3>Events (First 20 latest)</h3>";
-    $events = \App\Models\Evento::orderBy('eve_inicia', 'desc')->take(20)->get();
-
-    echo "<table border='1' cellpadding='5' style='border-collapse: collapse; width: 100%;'>";
-    echo "<tr style='background: #f0f0f0;'>
-            <th>ID</th>
-            <th>Nombre</th>
-            <th>Estado</th>
-            <th>Inicio</th>
-            <th>Fin</th>
-            <th>Status Logic</th>
-          </tr>";
-
-    foreach ($events as $e) {
-        $start = \Carbon\Carbon::parse($e->eve_inicia);
-        $end = \Carbon\Carbon::parse($e->eve_finaliza);
-
-        $isCurrent = $now->between($start, $end);
-        $isFuture = $end->greaterThanOrEqualTo($now);
-        $startIsFuture = $start->greaterThan($now);
-
-        $rowColor = $isCurrent ? '#dff0d8' : ($isFuture ? '#d9edf7' : '#f2dede');
-
-        echo "<tr style='background: {$rowColor};'>";
-        echo "<td>{$e->eve_id}</td>";
-        echo "<td>{$e->eve_nombre}</td>";
-        echo "<td>{$e->eve_estado}</td>";
-        echo "<td>{$e->eve_inicia}</td>";
-        echo "<td>{$e->eve_finaliza}</td>";
-        echo "<td>";
-        echo "<strong>Current (En Curso):</strong> " . ($isCurrent ? 'YES' : 'NO') . "<br>";
-        echo "<strong>Future (Próximos):</strong> " . ($isFuture ? 'YES' : 'NO') . "<br>";
-        echo "Start > Now: " . ($startIsFuture ? 'YES' : 'NO');
-        echo "</td>";
-        echo "</tr>";
-    }
-    echo "</table>";
-});
 
 // Rutas de Autenticación
 Route::get('login', [AuthController::class, 'showLoginForm'])->name('login');
