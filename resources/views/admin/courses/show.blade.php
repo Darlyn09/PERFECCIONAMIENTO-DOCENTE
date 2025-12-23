@@ -64,7 +64,7 @@
                     @endif
 
                     {{-- Stats del Header --}}
-                    <div class="grid grid-cols-2 sm:grid-cols-4 gap-6 pt-6 border-t border-white/10">
+                    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-6 pt-6 border-t border-white/10">
                         <div>
                             <p class="text-xs text-indigo-300 uppercase font-bold mb-1">Duración</p>
                             <p class="text-white font-bold text-lg">
@@ -96,6 +96,42 @@
                                     {{ $course->programas->count() }}
                                 </span>
                             </p>
+                        </div>
+                        {{-- Nuevas Estadísticas de Evaluación --}}
+                        @php
+                            $allInscripciones = $course->programas->flatMap->inscripciones;
+                            $avgSatisfaccion = $allInscripciones->whereNotNull('ins_evaluacion')->avg('ins_evaluacion');
+                            
+                            $evaluados = $allInscripciones->whereNotNull('ins_repetiria');
+                            $totalEvaluados = $evaluados->count();
+                            $siRepetiria = $evaluados->where('ins_repetiria', 1)->count();
+                            $porcentajeRep = $totalEvaluados > 0 ? ($siRepetiria / $totalEvaluados) * 100 : null;
+                        @endphp
+                        <div>
+                            <p class="text-xs text-indigo-300 uppercase font-bold mb-1">Satisfacción</p>
+                            <div class="flex items-center">
+                                <span class="text-lg font-bold mr-2 {{ $avgSatisfaccion ? ($avgSatisfaccion >= 4.0 ? 'text-emerald-400' : 'text-amber-400') : 'text-slate-400' }}">
+                                    {{ $avgSatisfaccion ? number_format($avgSatisfaccion, 1) : '-' }}
+                                </span>
+                                @if($avgSatisfaccion)
+                                    <div class="flex text-xs text-amber-400">
+                                        @for($i=1; $i<=5; $i++)
+                                            <i class="fas fa-star {{ $i <= round($avgSatisfaccion) ? '' : 'text-white/20' }}"></i>
+                                        @endfor
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                        <div>
+                            <p class="text-xs text-indigo-300 uppercase font-bold mb-1">Recomendación</p>
+                            <div class="flex items-center">
+                                <span class="text-lg font-bold mr-2 {{ $porcentajeRep !== null ? ($porcentajeRep >= 80 ? 'text-emerald-400' : 'text-amber-400') : 'text-slate-400' }}">
+                                    {{ $porcentajeRep !== null ? round($porcentajeRep) . '%' : '-' }}
+                                </span>
+                                @if($porcentajeRep !== null)
+                                    <i class="fas fa-thumbs-up {{ $porcentajeRep >= 80 ? 'text-emerald-400' : 'text-amber-400' }}"></i>
+                                @endif
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -157,12 +193,61 @@
                                             {{ $index + 1 }}
                                         </div>
                                         
-                                        {{-- Botón editar --}}
-                                        <a href="{{ route('admin.programs.edit', $programa->pro_id) }}" 
-                                           class="absolute top-4 right-4 p-2 text-slate-400 hover:text-blue-institutional hover:bg-blue-50 rounded-lg transition-all"
-                                           title="Editar programa">
-                                            <i class="fas fa-pencil-alt"></i>
-                                        </a>
+                                        {{-- Acciones (Editar + Estado) --}}
+                                        <div class="absolute top-4 right-4 flex items-center gap-2">
+                                            {{-- Toggle Estado --}}
+                                            {{-- Toggle Estado (Async) --}}
+                                            <div x-data="{ 
+                                                loading: false, 
+                                                active: {{ $programa->pro_estado ? 'true' : 'false' }},
+                                                async toggle() {
+                                                    this.loading = true;
+                                                    try {
+                                                        const response = await fetch('{{ route('admin.programs.toggle', $programa->pro_id) }}', {
+                                                            method: 'POST',
+                                                            headers: {
+                                                                'Content-Type': 'application/json',
+                                                                'Accept': 'application/json',
+                                                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                                            },
+                                                            body: JSON.stringify({ _method: 'PATCH' })
+                                                        });
+                                                        const data = await response.json();
+                                                        if (data.success) {
+                                                            this.active = !!data.new_state;
+                                                            // Opcional: Mostrar toast o notificación pequeña
+                                                        }
+                                                    } catch (e) {
+                                                        console.error('Error:', e);
+                                                        alert('Ocurrió un error al cambiar el estado.');
+                                                    } finally {
+                                                        this.loading = false;
+                                                    }
+                                                }
+                                            }">
+                                                <button type="button" @click="toggle()" :disabled="loading"
+                                                    class="p-2 rounded-lg transition-all"
+                                                    :class="active ? 'text-emerald-500 hover:bg-emerald-50 hover:text-emerald-600' : 'text-red-500 hover:bg-red-50 hover:text-red-600'"
+                                                    :title="active ? 'Desactivar Sesión' : 'Activar Sesión'">
+                                                    <i class="fas text-lg" 
+                                                       :class="loading ? 'fa-spinner fa-spin' : (active ? 'fa-toggle-on' : 'fa-toggle-off')"></i>
+                                                </button>
+                                            </div>
+
+                                            {{-- Editar --}}
+                                            <a href="{{ route('admin.programs.edit', $programa->pro_id) }}" 
+                                               class="p-2 text-slate-400 hover:text-blue-institutional hover:bg-blue-50 rounded-lg transition-all"
+                                               title="Editar programa">
+                                                <i class="fas fa-pencil-alt"></i>
+                                            </a>
+
+                                            {{-- Gestionar Docentes --}}
+                                            <a href="{{ route('admin.programs.teachers', $programa->pro_id) }}" 
+                                               class="p-2 text-slate-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-all"
+                                               title="Gestionar Docentes y Certificación">
+                                                <i class="fas fa-chalkboard-teacher"></i>
+                                            </a>
+                                        </div>
                                         
                                         <div class="ml-6">
                                             <div class="flex flex-col md:flex-row md:items-start md:justify-between gap-3 mb-3">
@@ -171,10 +256,12 @@
                                                         Sesión {{ $index + 1 }}
                                                     </h4>
                                                     @if($programa->pro_horario)
-                                                        <p class="text-slate-500 text-sm flex items-start gap-2 max-w-xl">
-                                                            <i class="fas fa-info-circle text-slate-400 mt-0.5"></i>
-                                                            {{ $programa->pro_horario }}
-                                                        </p>
+                                                        <div class="text-slate-500 text-sm flex items-start gap-2 max-w-xl">
+                                                            <i class="fas fa-info-circle text-slate-400 mt-0.5 shrink-0"></i>
+                                                            <div class="prose prose-sm prose-slate">
+                                                                {!! $programa->pro_horario !!}
+                                                            </div>
+                                                        </div>
                                                     @endif
                                                 </div>
                                             </div>
@@ -335,10 +422,72 @@
                             </div>
                         </div>
 
-                        <a href="{{ route('admin.users.create') }}?curso_id={{ $course->cur_id }}" 
-                           class="flex w-full items-center justify-center px-4 py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl">
-                            <i class="fas fa-user-plus mr-2"></i> Inscribir Alumno
-                        </a>
+                        <div class="space-y-3">
+                            <a href="{{ route('admin.users.create') }}?curso_id={{ $course->cur_id }}" 
+                               class="flex w-full items-center justify-center px-4 py-3 bg-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition-all shadow-lg hover:shadow-xl">
+                                <i class="fas fa-user-plus mr-2"></i> Inscribir Alumno
+                            </a>
+                            
+                            {{-- Carga Masiva (Excel) --}}
+                            <div x-data="{ open: false, hasProgram: {{ $course->programas->count() > 0 ? 'true' : 'false' }} }">
+                                <button @click="if(!hasProgram) { alert('Debes crear al menos una sesión/programa para realizar la carga masiva.'); return; } open = true" 
+                                        class="flex w-full items-center justify-center px-4 py-3 bg-white border-2 border-slate-200 text-slate-700 font-bold rounded-xl hover:bg-slate-50 transition-all {{ $course->programas->count() == 0 ? 'opacity-50 cursor-not-allowed' : '' }}"
+                                        title="{{ $course->programas->count() == 0 ? 'Crea una sesión primero' : 'Importar participantes' }}">
+                                    <i class="fas fa-file-excel text-green-600 mr-2"></i> Carga Masiva (Excel)
+                                </button>
+
+                                {{-- Modal --}}
+                                @if($course->programas->count() > 0)
+                                    <div x-show="open" class="fixed inset-0 z-50 flex items-center justify-center px-4 sm:px-6" style="display: none;">
+                                        <div class="fixed inset-0 bg-slate-900/60 transition-opacity" @click="open = false"></div>
+
+                                        <div class="bg-white rounded-2xl shadow-2xl transform transition-all sm:max-w-lg w-full p-6 relative z-10">
+                                            <div class="flex items-center justify-between mb-5">
+                                                <h3 class="text-xl font-bold text-slate-800">Carga Masiva de Participantes</h3>
+                                                <button @click="open = false" class="text-slate-400 hover:text-slate-500">
+                                                    <i class="fas fa-times text-xl"></i>
+                                                </button>
+                                            </div>
+
+                                            <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 text-sm text-blue-800">
+                                                <p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i> Instrucciones:</p>
+                                                <p>Sube un archivo Excel (.xlsx) con las siguientes columnas (encabezado en primera fila):</p>
+                                                <ul class="list-disc list-inside mt-2 ml-1 text-blue-700">
+                                                    <li><b>correo</b> (Requerido)</li>
+                                                    <li>nombres</li>
+                                                    <li>apellidos</li>
+                                                    <li>rut</li>
+                                                </ul>
+                                            </div>
+
+                                            <form action="{{ route('admin.programs.import_participants', $course->programas->first()->pro_id) }}" method="POST" enctype="multipart/form-data">
+                                                @csrf
+                                                <div class="mb-6">
+                                                    <label class="block text-sm font-bold text-slate-700 mb-2">Seleccionar Archivo Excel</label>
+                                                    <input type="file" name="file" accept=".xlsx,.xls,.numbers,.csv" required
+                                                           class="block w-full text-sm text-slate-500
+                                                                  file:mr-4 file:py-2.5 file:px-4
+                                                                  file:rounded-xl file:border-0
+                                                                  file:text-sm file:font-semibold
+                                                                  file:bg-blue-50 file:text-blue-700
+                                                                  hover:file:bg-blue-100
+                                                                  transition-all border border-slate-300 rounded-xl px-2 py-2">
+                                                </div>
+
+                                                <div class="flex justify-end gap-3">
+                                                    <button type="button" @click="open = false" class="px-5 py-2.5 text-slate-500 hover:bg-slate-100 rounded-xl font-bold transition-colors">
+                                                        Cancelar
+                                                    </button>
+                                                    <button type="submit" class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-600/30 transition-all">
+                                                        <i class="fas fa-upload mr-2"></i> Subir y Procesar
+                                                    </button>
+                                                </div>
+                                            </form>
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
                     </div>
                 </div>
 

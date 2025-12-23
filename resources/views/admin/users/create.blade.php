@@ -64,8 +64,86 @@
                     </div>
                 @endif
 
-                <form id="create-form" action="{{ route('admin.users.store') }}" method="POST" class="p-6 sm:p-8">
+                <form id="create-form" action="{{ route('admin.users.store') }}" method="POST" class="p-6 sm:p-8" x-data="{
+                                          rut: '{{ old('par_login') }}',
+                                          email: '{{ old('par_correo') }}',
+                                          loading: false,
+                                          found: false,
+                                          async search(type) {
+                                              let param = '';
+                                              if (type === 'rut' && this.rut.length >= 3) param = 'rut=' + this.rut;
+                                              else if (type === 'email' && this.email.length >= 5) param = 'email=' + this.email;
+                                              else return;
+
+                                              this.loading = true;
+                                              try {
+                                                  console.log('Searching by ' + type + ':', param);
+                                                  const res = await fetch('{{ route('admin.users.search') }}?' + param);
+                                                  if (!res.ok) throw new Error('Network response was not ok');
+
+                                                  const user = await res.json();
+                                                  console.log('User found:', user);
+
+                                                  if(user) {
+                                                      this.found = true;
+                                                      // Sync identifiers
+                                                      if(user.par_login) this.rut = user.par_login;
+                                                      if(user.par_correo) this.email = user.par_correo;
+
+                                                      // Rellenar campos con validación de existencia (evitar undefined)
+                                                      // Eloquent devuelve null para campos vacíos, pero si la propiedad falta es undefined.
+                                                      // Usamos || '' para prevenir undefined visual.
+                                                      document.getElementById('par_nombre').value = user.par_nombre || '';
+                                                      document.getElementById('par_apellido').value = user.par_apellido || '';
+
+                                                      // Perfil
+                                                      let perfilSelect = document.getElementById('par_perfil');
+                                                      if (user.par_perfil && [...perfilSelect.options].some(o => o.value == user.par_perfil)) {
+                                                          perfilSelect.value = user.par_perfil;
+                                                      }
+
+                                                      document.getElementById('par_cargo').value = user.par_cargo || '';
+                                                      document.getElementById('par_anexo').value = user.par_anexo || '';
+                                                      document.getElementById('par_facultad').value = user.par_facultad || '';
+                                                      document.getElementById('par_departamento').value = user.par_departamento || '';
+                                                      document.getElementById('par_sede').value = user.par_sede || '';
+
+                                                      document.getElementById('par_password').required = false;
+                                                      document.getElementById('par_password').placeholder = '(Usuario existente - Contraseña no requerida)';
+                                                  } else {
+                                                      console.log('User not found');
+                                                      this.found = false;
+                                                      document.getElementById('par_password').required = true;
+                                                      document.getElementById('par_password').placeholder = '••••••••';
+                                                  }
+                                              } catch(e) { 
+                                                  console.error('Error searching user:', e); 
+                                              }
+                                              this.loading = false;
+                                          }
+                                      }">
                     @csrf
+                    {{-- Input Hidden para Curso (Contexto Inscripción) --}}
+                    @if(request('curso_id'))
+                        <input type="hidden" name="curso_id" value="{{ request('curso_id') }}">
+                        <div class="mb-6 p-4 bg-blue-50 border-l-4 border-blue-500 rounded-r-xl">
+                            <p class="text-blue-800 font-bold text-sm">
+                                <i class="fas fa-info-circle mr-2"></i> Modo Inscripción
+                            </p>
+                            <p class="text-blue-600 text-sm mt-1">Si ingresas el RUT de un usuario existente, se inscribirá
+                                automáticamente en el curso.</p>
+                        </div>
+                    @endif
+
+                    <!-- Mensaje de usuario encontrado -->
+                    <div x-show="found" x-transition
+                        class="mb-6 p-4 bg-emerald-50 border-l-4 border-emerald-500 rounded-r-xl shadow-sm">
+                        <p class="text-emerald-800 font-bold text-sm flex items-center">
+                            <i class="fas fa-check-circle mr-2"></i> Usuario Encontrado
+                        </p>
+                        <p class="text-emerald-600 text-sm mt-1">Los datos se han cargado automáticamente. Al guardar, el
+                            usuario será inscrito en el curso (si corresponde) o actualizado.</p>
+                    </div>
 
                     <div class="space-y-6">
                         {{-- Sección Identificación --}}
@@ -81,9 +159,15 @@
                                         for="par_login">
                                         Login (RUT) <span class="text-amber-500">*</span>
                                     </label>
-                                    <input type="text" name="par_login" id="par_login" value="{{ old('par_login') }}"
-                                        class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm"
-                                        placeholder="Ej: 12345678-9" required>
+                                    <div class="relative">
+                                        <input type="text" name="par_login" id="par_login" x-model="rut"
+                                            @blur="search('rut')"
+                                            class="w-full pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm"
+                                            placeholder="Ej: 12345678-9" required>
+                                        <div class="absolute right-3 top-3.5" x-show="loading">
+                                            <i class="fas fa-spinner fa-spin text-blue-500"></i>
+                                        </div>
+                                    </div>
                                 </div>
                                 <div class="space-y-2">
                                     <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide"
@@ -131,7 +215,8 @@
                                         for="par_correo">
                                         Correo Electrónico <span class="text-amber-500">*</span>
                                     </label>
-                                    <input type="email" name="par_correo" id="par_correo" value="{{ old('par_correo') }}"
+                                    <input type="email" name="par_correo" id="par_correo" x-model="email"
+                                        @blur="search('email')"
                                         class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm"
                                         required>
                                 </div>
@@ -159,7 +244,7 @@
                                 <div class="space-y-2">
                                     <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide"
                                         for="par_password">
-                                        Contraseña <span class="text-amber-500">*</span>
+                                        Contraseña <span class="text-amber-500" x-show="!found">*</span>
                                     </label>
                                     <input type="password" name="par_password" id="par_password"
                                         class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm"
@@ -213,18 +298,18 @@
                             Cancelar
                         </a>
                         <button type="button" @click.prevent="$dispatch('confirm-action', { 
-                                title: 'Registrar Nuevo Usuario', 
-                                message: '¿Confirma que los datos ingresados son correctos? Se registrará un nuevo usuario en el sistema.', 
-                                type: 'enable',
-                                formId: 'create-form',
-                                confirmText: 'Sí, Registrar' 
-                            })"
+                                                    title: found ? 'Inscribir Usuario Existente' : 'Registrar Nuevo Usuario', 
+                                                    message: found ? '¿Deseas inscribir a este usuario existente en el curso?' : '¿Confirma que los datos son correctos?', 
+                                                    type: 'enable',
+                                                    formId: 'create-form',
+                                                    confirmText: found ? 'Inscribir Usuario' : 'Registrar Usuario' 
+                                                })"
                             class="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                     d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                             </svg>
-                            Registrar Usuario
+                            <span x-text="found ? 'Inscribir Usuario' : 'Registrar Usuario'"></span>
                         </button>
                     </div>
                 </form>

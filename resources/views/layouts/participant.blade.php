@@ -51,18 +51,36 @@
                         </div>
                     </li>
 
-                    <!-- Dashboard / Mis Cursos -->
+                    {{-- Dashboard (Ofertas/Inicio) --}}
                     <li>
                         <a href="{{ route('participant.dashboard') }}"
                             class="relative flex flex-row items-center h-11 focus:outline-none hover:bg-blue-800 text-blue-100 hover:text-yellow-300 border-l-4 border-transparent hover:border-yellow-400 pr-6 transition-colors duration-200">
                             <span class="inline-flex justify-center items-center ml-4">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6">
-                                    </path>
-                                </svg>
+                                <i class="fa fa-th-large text-lg"></i>
+                            </span>
+                            <span class="ml-2 text-sm tracking-wide truncate">Dashboard</span>
+                        </a>
+                    </li>
+
+                    {{-- Mis Cursos (Inscritos) --}}
+                    <li>
+                        <a href="{{ route('participant.my_courses') }}"
+                            class="relative flex flex-row items-center h-11 focus:outline-none hover:bg-blue-800 text-blue-100 hover:text-yellow-300 border-l-4 border-transparent hover:border-yellow-400 pr-6 transition-colors duration-200">
+                            <span class="inline-flex justify-center items-center ml-4">
+                                <i class="fa fa-graduation-cap text-lg"></i>
                             </span>
                             <span class="ml-2 text-sm tracking-wide truncate">Mis Cursos</span>
+                        </a>
+                    </li>
+
+                    {{-- Mis Certificados --}}
+                    <li>
+                        <a href="{{ route('participant.certificates') }}"
+                            class="relative flex flex-row items-center h-11 focus:outline-none hover:bg-blue-800 text-blue-100 hover:text-yellow-300 border-l-4 border-transparent hover:border-yellow-400 pr-6 transition-colors duration-200">
+                            <span class="inline-flex justify-center items-center ml-4">
+                                <i class="fa fa-certificate text-lg"></i>
+                            </span>
+                            <span class="ml-2 text-sm tracking-wide truncate">Mis Certificados</span>
                         </a>
                     </li>
 
@@ -70,28 +88,25 @@
                         <a href="{{ route('participant.agenda') }}"
                             class="relative flex flex-row items-center h-11 focus:outline-none hover:bg-blue-800 text-blue-100 hover:text-yellow-300 border-l-4 border-transparent hover:border-yellow-400 pr-6 transition-colors duration-200">
                             <span class="inline-flex justify-center items-center ml-4">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                        d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z">
-                                    </path>
-                                </svg>
+                                <i class="fa fa-calendar-alt text-lg"></i>
                             </span>
                             <span class="ml-2 text-sm tracking-wide truncate">Agenda Académica</span>
                         </a>
                     </li>
 
                     @if(Auth::guard('participant')->user()->relator)
+                        <li class="px-5 pt-4 pb-2">
+                            <div class="flex flex-row items-center h-8">
+                                <div class="text-xs font-semibold tracking-wide text-yellow-500 uppercase">Docencia</div>
+                            </div>
+                        </li>
                         <li>
                             <a href="{{ route('participant.relator.my_courses') }}"
                                 class="relative flex flex-row items-center h-11 focus:outline-none hover:bg-blue-800 text-blue-100 hover:text-yellow-300 border-l-4 border-transparent hover:border-yellow-400 pr-6 transition-colors duration-200">
                                 <span class="inline-flex justify-center items-center ml-4">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
-                                        </path>
-                                    </svg>
+                                    <i class="fa fa-chalkboard-teacher text-lg"></i>
                                 </span>
-                                <span class="ml-2 text-sm tracking-wide truncate">Portal Docente</span>
+                                <span class="ml-2 text-sm tracking-wide truncate">Panel Docente</span>
                             </a>
                         </li>
                     @endif
@@ -444,6 +459,7 @@
                         </div>
                     </div>
 
+                    {{-- Botones --}}
                     {{-- Botones --}}
                     <div class="p-6 pt-0 flex gap-3">
                         <button @click="closeModal()"

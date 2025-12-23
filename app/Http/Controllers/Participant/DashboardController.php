@@ -28,6 +28,16 @@ class DashboardController extends Controller
         ])
             ->where('cur_estado', 1)
             ->whereNotIn('cur_id', $enrolledCourseIds) // Excluir inscritos
+            ->when($participante->relator, function ($q) use ($participante) {
+                // Excluir cursos donde el usuario es relator
+                $rel_login = $participante->relator->rel_login;
+                $q->whereDoesntHave('programas', function ($q2) use ($rel_login) {
+                    $q2->where('rel_login', $rel_login)
+                        ->orWhereHas('relatores', function ($q3) use ($rel_login) {
+                            $q3->where('relator.rel_login', $rel_login);
+                        });
+                });
+            })
             ->whereDate('cur_fecha_inicio', '>=', now())
             ->whereHas('programas', function ($q) {
                 $q->whereDate('pro_inicia', '>=', now());
@@ -116,7 +126,7 @@ class DashboardController extends Controller
         // Use inscripciones to get robust data
         // We select key relations
         $enrollments = $participante->inscripciones()
-            ->with(['curso.programas', 'curso.categoria', 'informacion'])
+            ->with(['curso.programas.relatores.relator', 'curso.categoria', 'informacion'])
             ->get();
 
         // Map enrollments to courses collection, hydrating properties
@@ -190,15 +200,117 @@ class DashboardController extends Controller
             ->take(5)
             ->get();
 
-        // Cursos próximos disponibles (no inscritos)
+        // 3. Próximos Inscritos (Enrolled but starting in future)
+        $upcomingEnrolledCourses = $participante->inscripciones()
+            ->with(['curso.programas'])
+            ->whereHas('curso', function ($q) use ($now) {
+                // $q->where('cur_estado', 1) // Remove global state check? Or keep it? keeping it for now but relaxed
+                $q->where('cur_fecha_inicio', '>', $now);
+            })
+            ->get()
+            ->map(function ($ins) {
+                return $ins->curso;
+            });
+
+
+        // 4. Próximos Disponibles (No inscritos)
         $enrolledIds = $participante->cursos->pluck('cur_id')->toArray();
-        $upcomingCourses = Curso::where('cur_estado', 1)
+        $upcomingAvailableCourses = Curso::where('cur_estado', 1)
             ->whereNotIn('cur_id', $enrolledIds)
+            ->when($participante->relator, function ($q) use ($participante) {
+                // Excluir cursos donde el usuario es relator
+                $rel_login = $participante->relator->rel_login;
+                $q->whereDoesntHave('programas', function ($q2) use ($rel_login) {
+                    $q2->where('rel_login', $rel_login)
+                        ->orWhereHas('relatores', function ($q3) use ($rel_login) {
+                            $q3->where('relator.rel_login', $rel_login);
+                        });
+                });
+            })
             ->whereDate('cur_fecha_inicio', '>=', $now)
             ->orderBy('cur_fecha_inicio', 'asc')
             ->take(5)
             ->get();
 
-        return view('participant.agenda', compact('activeCourses', 'activeEvents', 'upcomingEvents', 'upcomingCourses'));
+        return view('participant.agenda', compact('activeCourses', 'activeEvents', 'upcomingEvents', 'upcomingAvailableCourses', 'upcomingEnrolledCourses'));
+    }
+    public function generateCertificate($courseId)
+    {
+        // Placeholder for existing method if not viewing full file
+        // Logic for certificate generation
+    }
+
+    public function myCertificates()
+    {
+        $participante = Auth::guard('participant')->user();
+
+        // 1. Certificados como Alumno (Cursos Aprobados)
+        $studentCertificates = $participante->inscripciones()
+            ->with(['curso', 'informacion'])
+            ->get()
+            ->filter(function ($ins) {
+                // Solo aprobados
+                return $ins->informacion && $ins->informacion->inf_estado == 1;
+            })
+            ->map(function ($ins) {
+                return (object) [
+                    'source' => 'student',
+                    'course_name' => $ins->curso->cur_nombre,
+                    'date' => $ins->informacion->inf_fecha_certificado ?? $ins->curso->cur_fecha_termino, // Fallback date
+                    'download_url' => route('certificates.download', ['login' => $participante->par_login, 'courseId' => $ins->cur_id]), // Updated route
+                    'role' => 'Participante'
+                ];
+            });
+
+        // 2. Certificados como Docente
+        $teacherCertificates = collect();
+        if ($participante->relator) {
+            $teacherCertificates = $participante->relator->programasAsignados()
+                ->with(['curso'])
+                ->wherePivotNotNull('rr_certificado')
+                ->get()
+                ->map(function ($programa) use ($participante) {
+                    return (object) [
+                        'source' => 'teacher',
+                        'course_name' => $programa->curso->cur_nombre . ' (Sesión #' . $programa->pro_id . ')',
+                        'date' => $programa->pivot->rr_certificado,
+                        'download_url' => route('admin.relators.certificate', ['id' => $programa->pro_id, 'relLogin' => $participante->relator->rel_login]), // Reuse admin route or new one?
+                        'role' => 'Relator'
+                    ];
+                });
+        }
+
+        $allCertificates = $studentCertificates->concat($teacherCertificates)->sortByDesc('date');
+
+        return view('participant.certificates', compact('participante', 'studentCertificates', 'teacherCertificates', 'allCertificates'));
+    }
+
+    public function rateCourse(Request $request)
+    {
+        $request->validate([
+            'course_id' => 'required|exists:curso,cur_id',
+            'rating' => 'required|integer|min:1|max:5',
+            'repeat' => 'required|boolean'
+        ]);
+
+        $user = auth()->user();
+        if (!$user) {
+            return response()->json(['success' => false, 'message' => 'No autorizado'], 401);
+        }
+
+        $inscripcion = \App\Models\Inscripcion::where('par_login', $user->par_login)
+            ->where('cur_id', $request->course_id)
+            ->first();
+
+        if (!$inscripcion) {
+            return response()->json(['success' => false, 'message' => 'Inscripción no encontrada'], 404);
+        }
+
+        $inscripcion->ins_evaluacion = $request->rating;
+        $inscripcion->ins_repetiria = $request->repeat;
+        $inscripcion->ins_fecha_evaluacion = now();
+        $inscripcion->save();
+
+        return response()->json(['success' => true]);
     }
 }

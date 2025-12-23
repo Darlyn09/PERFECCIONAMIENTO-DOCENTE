@@ -9,6 +9,7 @@ use App\Models\Curso;
 use App\Models\Inscripcion;
 use App\Models\Informacion;
 use App\Models\Relator;
+use App\Models\Participante;
 
 class RelatorController extends Controller
 {
@@ -61,8 +62,12 @@ class RelatorController extends Controller
 
         $eventos = \App\Models\Evento::where('eve_estado', 1)->orderBy('eve_id', 'desc')->get();
         $categorias = \App\Models\Categoria::all();
+        // Cargar participantes para selección de colaboradores
+        $participantes = Participante::select('par_login', 'par_nombre', 'par_apellido')
+            ->orderBy('par_nombre')
+            ->get();
 
-        return view('participant.relator.create_course', compact('eventos', 'categorias'));
+        return view('participant.relator.create_course', compact('eventos', 'categorias', 'participantes'));
     }
 
     /**
@@ -124,7 +129,9 @@ class RelatorController extends Controller
         $programa->pro_finaliza = $request->cur_fecha_termino;
         $programa->pro_horario = $request->pro_horario;
         $programa->pro_lugar = $request->pro_lugar; // Guardar ubicación texto
-        $programa->pro_colaboradores = ''; // Valor por defecto
+        $programa->pro_horario = $request->pro_horario;
+        $programa->pro_lugar = $request->pro_lugar; // Guardar ubicación texto
+        $programa->pro_colaboradores = $request->input('pro_colaboradores') ?? ''; // Guardar colaboradores seleccionados
 
         // Completar campos obligatorios de fechas y horas
         $programa->pro_abre = $request->cur_fecha_inicio;
@@ -198,5 +205,71 @@ class RelatorController extends Controller
         $informacion->save();
 
         return back()->with('success', 'Estado de aprobación actualizado correctamente.');
+    }
+
+    /**
+     * Gestión de Calificaciones (Grades)
+     */
+    public function grades($pro_id)
+    {
+        $participant = Auth::guard('participant')->user();
+
+        if (!$participant || !$participant->relator) {
+            abort(403, 'Acceso denegado.');
+        }
+
+        // Verificar que el programa pertenece al relator (Directo o Colaborador)
+        $programa = \App\Models\Programa::with(['curso', 'inscripciones.participante'])
+            ->where('pro_id', $pro_id)
+            ->where(function ($q) use ($participant) {
+                $rel_login = $participant->relator->rel_login;
+                $q->where('rel_login', $rel_login)
+                    ->orWhereHas('relatores', function ($q2) use ($rel_login) {
+                        $q2->where('relator.rel_login', $rel_login);
+                    });
+            })
+            ->firstOrFail();
+
+        return view('participant.relator.grades', compact('programa'));
+    }
+
+    public function updateGrades(Request $request, $pro_id)
+    {
+        $participant = Auth::guard('participant')->user();
+        if (!$participant || !$participant->relator)
+            abort(403);
+
+        $programa = \App\Models\Programa::findOrFail($pro_id);
+
+        // Security check
+        $rel_login = $participant->relator->rel_login;
+        $isRelator = ($programa->rel_login == $rel_login) ||
+            $programa->relatores()->where('relator.rel_login', $rel_login)->exists();
+
+        if (!$isRelator)
+            abort(403, 'No autorizado para este programa.');
+
+        $notas = $request->input('notas', []);
+        $asistencias = $request->input('asistencias', []);
+
+        foreach ($notas as $insId => $nota) {
+            $inscripcion = Inscripcion::find($insId);
+            if ($inscripcion && $inscripcion->pro_id == $pro_id) {
+                // Use Informacion table
+                $informacion = Informacion::firstOrNew(['ins_id' => $insId]);
+                $informacion->inf_nota = $nota;
+
+                if (isset($asistencias[$insId])) {
+                    $informacion->inf_asistencia = $asistencias[$insId];
+                }
+
+                // Estado: Aprobado si nota >= 4.0
+                $informacion->inf_estado = ($nota >= 4.0) ? 1 : 0;
+
+                $informacion->save();
+            }
+        }
+
+        return back()->with('success', 'Calificaciones actualizadas correctamente.');
     }
 }

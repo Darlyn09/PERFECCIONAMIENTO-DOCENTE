@@ -33,6 +33,7 @@ class Curso extends Model
         'cur_lugar',
         'cur_latitud',
         'cur_longitud',
+        'cur_cupos', // Added for Req 75
     ];
 
     protected $casts = [

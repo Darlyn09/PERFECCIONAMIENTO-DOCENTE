@@ -64,11 +64,60 @@
                     </div>
                 @endif
 
-                <form id="create-relator-form" action="{{ route('admin.relators.store') }}" method="POST"
-                    class="p-6 sm:p-8">
+                <form id="create-relator-form" action="{{ route('admin.relators.store') }}" method="POST" class="p-6 sm:p-8"
+                    x-data="{
+                                rut: '{{ old('rel_login') }}',
+                                email: '{{ old('rel_correo') }}',
+                                loading: false,
+                                found: false,
+                                async search(type) {
+                                    let param = '';
+                                    if (type === 'rut' && this.rut.length >= 3) param = 'rut=' + this.rut;
+                                    else if (type === 'email' && this.email.length >= 5) param = 'email=' + this.email;
+                                    else return;
+
+                                    this.loading = true;
+                                    try {
+                                        const res = await fetch('{{ route('admin.relators.search') }}?' + param);
+                                        const data = await res.json();
+                                        if(data) {
+                                            this.found = true;
+                                            if(data.rel_login) this.rut = data.rel_login;
+                                            if(data.rel_correo) this.email = data.rel_correo;
+
+                                            document.getElementById('rel_nombre').value = data.rel_nombre || '';
+                                            document.getElementById('rel_apellido').value = data.rel_apellido || '';
+                                            document.getElementById('rel_cargo').value = data.rel_cargo || '';
+                                            document.getElementById('rel_facultad').value = data.rel_facultad || '';
+                                            document.getElementById('rel_fono').value = data.rel_fono || '';
+                                        } else {
+                                            this.found = false;
+                                        }
+                                    } catch(e) { console.error(e); }
+                                    this.loading = false;
+                                }
+                            }">
                     @csrf
 
                     <div class="space-y-6">
+                        {{-- Notificación de encontrado --}}
+                        <div x-show="found" x-transition class="bg-blue-50 border-l-4 border-blue-500 p-4 rounded-r mb-4">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-blue-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd"
+                                            d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
+                                            clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-blue-700">
+                                        Relator encontrado. Los datos se han cargado automáticamente.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="p-6 bg-slate-50 rounded-xl border border-slate-200 space-y-6">
                             <h4
                                 class="text-xs font-bold text-slate-500 uppercase flex items-center gap-2 border-b border-slate-200 pb-2 mb-4">
@@ -81,9 +130,15 @@
                                         for="rel_login">
                                         Login / Identificador <span class="text-amber-500">*</span>
                                     </label>
-                                    <input type="text" name="rel_login" id="rel_login" value="{{ old('rel_login') }}"
-                                        class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm font-mono"
-                                        placeholder="Ej: jperez" required>
+                                    <div class="relative">
+                                        <input type="text" name="rel_login" id="rel_login" x-model="rut"
+                                            @blur="search('rut')"
+                                            class="w-full pl-4 pr-10 py-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm font-mono"
+                                            placeholder="Ej: jperez" required>
+                                        <div class="absolute right-3 top-3.5" x-show="loading">
+                                            <i class="fas fa-spinner fa-spin text-blue-500"></i>
+                                        </div>
+                                    </div>
                                     <p class="text-xs text-slate-400">Identificador único en el sistema.</p>
                                 </div>
                                 <div class="space-y-2">
@@ -91,7 +146,8 @@
                                         for="rel_correo">
                                         Correo Electrónico <span class="text-amber-500">*</span>
                                     </label>
-                                    <input type="email" name="rel_correo" id="rel_correo" value="{{ old('rel_correo') }}"
+                                    <input type="email" name="rel_correo" id="rel_correo" x-model="email"
+                                        @blur="search('email')"
                                         class="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm"
                                         required>
                                 </div>
@@ -169,19 +225,9 @@
                             class="w-full sm:w-auto px-6 py-3 text-slate-500 hover:text-slate-700 hover:bg-slate-100 font-bold rounded-xl transition-all text-center border border-transparent hover:border-slate-200">
                             Cancelar
                         </a>
-                        <button type="button" @click.prevent="$dispatch('confirm-action', { 
-                                    title: 'Registrar Relator', 
-                                    message: '¿Confirma que la información del relator es correcta?', 
-                                    type: 'enable',
-                                    formId: 'create-relator-form',
-                                    confirmText: 'Sí, Registrar' 
-                                })"
+                        <button type="submit"
                             class="w-full sm:w-auto px-8 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                            </svg>
-                            Registrar Relator
+                            <span x-text="found ? 'Guardar Cambios' : 'Registrar Relator'"></span>
                         </button>
                     </div>
                 </form>

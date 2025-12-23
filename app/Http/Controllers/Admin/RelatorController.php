@@ -212,4 +212,35 @@ class RelatorController extends Controller
         return redirect()->route('admin.relators.index')
             ->with('success', 'Relatores seleccionados eliminados exitosamente.');
     }
+    public function searchRelator(Request $request)
+    {
+        $query = Relator::query();
+
+        if ($request->has('rut') && $request->rut != '') {
+            $query->where('rel_login', $request->rut);
+        } else if ($request->has('email') && $request->email != '') {
+            $query->where('rel_correo', $request->email);
+        } else {
+            return response()->json(null);
+        }
+
+        $relator = $query->first();
+        return response()->json($relator);
+    }
+
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:csv,txt,xlsx,xls'
+        ]);
+
+        try {
+            $import = new \App\Imports\TeachersImport();
+            \Maatwebsite\Excel\Facades\Excel::import($import, $request->file('file'));
+
+            return back()->with('success', "Carga masiva finalizada. Nuevos: {$import->importedCount}. Actualizados: {$import->updatedCount}. Fallidos: {$import->failedCount}.");
+        } catch (\Exception $e) {
+            return back()->with('error', 'Error al procesar el archivo: ' . $e->getMessage());
+        }
+    }
 }

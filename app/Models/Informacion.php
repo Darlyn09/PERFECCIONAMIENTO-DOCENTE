@@ -19,6 +19,10 @@ class Informacion extends Model
         'inf_asistencia',
         'inf_comentario',
         'inf_estado', // 1 = Aprobado
+        'inf_nota',
+        'inf_valoracion', // 1-5
+        'inf_repetir',    // Recomienda repetir?
+        'inf_mejora',     // Qué faltó?
     ];
 
     public function inscripcion()

@@ -178,9 +178,42 @@ class UserController extends Controller
         return view('admin.users.create');
     }
 
+    public function searchByRut(Request $request)
+    {
+        $query = Participante::query();
+
+        if ($request->has('rut') && $request->rut != '') {
+            $query->where('par_login', $request->rut);
+        } else if ($request->has('email') && $request->email != '') {
+            $query->where('par_correo', $request->email);
+        } else {
+            return response()->json(null);
+        }
+
+        $usuario = $query->first();
+        return response()->json($usuario);
+    }
+
     public function store(Request $request)
     {
+        // 1. Verificar si el usuario ya existe por RUT (par_login)
+        $existingUser = Participante::where('par_login', $request->par_login)->first();
+
+        // 2. Si existe Y estamos en contexto de inscripción (curso_id)
+        if ($existingUser && $request->filled('curso_id')) {
+            $this->enrollUser($existingUser, $request->curso_id);
+            return redirect()->route('admin.courses.show', $request->curso_id)
+                ->with('success', 'Usuario existente encontrado e inscrito correctamente en el curso.');
+        }
+
+        // 3. Si existe Y NO hay curso (Creación pura) -> Error duplicate
+        if ($existingUser) {
+            return back()->withErrors(['par_login' => 'El RUT/Login ya se encuentra registrado en el sistema.'])->withInput();
+        }
+
+        // 4. Si NO existe -> Validación estándar de creación
         $validated = $request->validate([
+            'par_login' => 'required|string|unique:participante,par_login', // Usar input login
             'par_nombre' => 'required|string',
             'par_apellido' => 'required|string',
             'par_correo' => 'required|email|unique:participante,par_correo',
@@ -192,6 +225,7 @@ class UserController extends Controller
             'par_cargo' => 'required|string',
             'par_anexo' => 'required|string',
         ], [
+            'par_login.unique' => 'El RUT/Login ya está registrado.',
             'par_correo.unique' => 'El correo electrónico ya está registrado.',
             'par_password.min' => 'La contraseña debe tener al menos 6 caracteres.',
             'par_cargo.required' => 'El cargo es obligatorio.',
@@ -199,7 +233,7 @@ class UserController extends Controller
         ]);
 
         $usuario = new Participante();
-        $usuario->par_login = $validated['par_correo']; // Login es el correo
+        $usuario->par_login = $validated['par_login']; // Corregido: Usar RUT real
         $usuario->par_nombre = $validated['par_nombre'];
         $usuario->par_apellido = $validated['par_apellido'];
         $usuario->par_correo = $validated['par_correo'];
@@ -211,10 +245,31 @@ class UserController extends Controller
         $usuario->par_departamento = $validated['par_departamento'];
         $usuario->par_sede = $validated['par_sede'];
         $usuario->fecha_registro = now();
-        $usuario->last_login_at = null; // Explícitamente null al crear
+        $usuario->last_login_at = null;
         $usuario->save();
 
+        // 5. Inscribir si corresponde
+        if ($request->filled('curso_id')) {
+            $this->enrollUser($usuario, $request->curso_id);
+            return redirect()->route('admin.courses.show', $request->curso_id)
+                ->with('success', 'Usuario creado e inscrito en el curso exitosamente.');
+        }
+
         return redirect()->route('admin.users.index')->with('success', 'Usuario creado exitosamente. Login: ' . $usuario->par_login);
+    }
+
+    // Helper para inscripción (Privado)
+    private function enrollUser($usuario, $cursoId)
+    {
+        $existe = Inscripcion::where('cur_id', $cursoId)->where('par_login', $usuario->par_login)->exists();
+        if (!$existe) {
+            $inscripcion = new Inscripcion();
+            $inscripcion->cur_id = $cursoId;
+            $inscripcion->par_login = $usuario->par_login;
+            $inscripcion->ins_date = now();
+            // $inscripcion->ins_perfil = 'alumno'; // Asumido o default DB
+            $inscripcion->save();
+        }
     }
 
     public function edit($id)

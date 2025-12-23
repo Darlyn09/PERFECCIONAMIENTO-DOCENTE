@@ -60,21 +60,22 @@
                                             </td>
                                             <td class="px-6 py-3">
                                                 <input type="number" step="0.1" min="1" max="7" name="notas[{{ $ins->ins_id }}]"
-                                                    value="{{ $ins->ins_nota }}"
+                                                    value="{{ $ins->informacion->inf_nota ?? '' }}"
                                                     class="w-full text-center border-slate-200 rounded-lg focus:ring-blue-institutional focus:border-blue-institutional font-bold text-slate-700"
                                                     placeholder="-">
                                             </td>
                                             <td class="px-6 py-3">
                                                 <input type="number" step="1" min="0" max="100"
-                                                    name="asistencias[{{ $ins->ins_id }}]" value="{{ $ins->ins_asistencia }}"
+                                                    name="asistencias[{{ $ins->ins_id }}]" value="{{ $ins->informacion->inf_asistencia ?? '' }}"
                                                     class="w-full text-center border-slate-200 rounded-lg focus:ring-blue-institutional focus:border-blue-institutional text-slate-700"
                                                     placeholder="%">
                                             </td>
                                             <td class="px-6 py-3 text-center">
-                                                @if($ins->ins_nota >= 4.0)
+                                                @php $nota = $ins->informacion->inf_nota ?? 0; @endphp
+                                                @if($nota >= 4.0)
                                                     <span
                                                         class="inline-flex items-center px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full">Aprobado</span>
-                                                @elseif($ins->ins_nota > 0)
+                                                @elseif($nota > 0)
                                                     <span
                                                         class="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">Reprobado</span>
                                                 @else
@@ -104,15 +105,15 @@
                         <i class="fa fa-file-excel text-emerald-400"></i> Carga Masiva
                     </h3>
                     <p class="text-indigo-200 text-sm mb-4">
-                        Actualiza notas y asistencia subiendo un archivo CSV que siga el formato de la plantilla.
+                        Actualiza notas y asistencia subiendo un archivo Excel o CSV que siga el formato de la plantilla.
                     </p>
 
                     <form action="{{ route('admin.programs.import_grades', $programa->pro_id) }}" method="POST"
                         enctype="multipart/form-data">
                         @csrf
                         <div class="mb-4">
-                            <label class="block text-xs uppercase font-bold text-indigo-300 mb-1">Archivo CSV</label>
-                            <input type="file" name="file" accept=".csv,.txt" class="block w-full text-sm text-slate-300
+                            <label class="block text-xs uppercase font-bold text-indigo-300 mb-1">Archivo Excel / CSV</label>
+                            <input type="file" name="file" accept=".csv,.txt,.xlsx,.xls" class="block w-full text-sm text-slate-300
                                     file:mr-4 file:py-2 file:px-4
                                     file:rounded-full file:border-0
                                     file:text-xs file:font-semibold

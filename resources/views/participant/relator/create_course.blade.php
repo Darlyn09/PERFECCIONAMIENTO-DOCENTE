@@ -177,6 +177,71 @@
                                     class="w-full rounded-lg border-blue-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm transition-colors bg-white">
                             </div>
 
+                            <div class="col-span-1 md:col-span-2 space-y-2" x-data="{
+                                search: '',
+                                open: false,
+                                selected: [],
+                                users: {{ $participantes->map(fn($p) => ['id' => $p->par_login, 'name' => $p->par_nombre . ' ' . $p->par_apellido])->toJson() }},
+                                add(user) {
+                                    if (!this.selected.some(u => u.id === user.id)) {
+                                        this.selected.push(user);
+                                    }
+                                    this.search = '';
+                                    this.open = false;
+                                },
+                                remove(index) {
+                                    this.selected.splice(index, 1);
+                                },
+                                get valueString() {
+                                    return this.selected.map(u => u.name).join(', ');
+                                }
+                            }">
+                                <label class="block text-sm font-medium text-blue-900 mb-1">
+                                    Colaboradores (Opcional)
+                                </label>
+
+                                <input type="hidden" name="pro_colaboradores" :value="valueString">
+
+                                <div class="flex flex-wrap gap-2 mb-2" x-show="selected.length > 0">
+                                    <template x-for="(user, index) in selected" :key="user.id">
+                                        <span
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                            <span x-text="user.name"></span>
+                                            <button type="button" @click="remove(index)"
+                                                class="ml-2 text-blue-600 hover:text-blue-900 focus:outline-none">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </span>
+                                    </template>
+                                </div>
+
+                                <div class="relative">
+                                    <input type="text" x-model="search" @focus="open = true" @click.away="open = false"
+                                        placeholder="Buscar usuario..."
+                                        class="w-full rounded-lg border-blue-300 focus:border-blue-500 focus:ring-blue-500 shadow-sm transition-colors bg-white">
+
+                                    <div x-show="open && search.length > 0"
+                                        class="absolute z-10 w-full mt-1 bg-white border border-blue-200 rounded-lg shadow-lg max-h-60 overflow-auto"
+                                        style="display: none;">
+                                        <template
+                                            x-for="user in users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()))"
+                                            :key="user.id">
+                                            <div @click="add(user)"
+                                                class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-gray-700 transition-colors">
+                                                <span x-text="user.name"></span>
+                                                <span class="text-xs text-gray-400" x-text="'(' + user.id + ')'"></span>
+                                            </div>
+                                        </template>
+                                        <div x-show="users.filter(u => u.name.toLowerCase().includes(search.toLowerCase())).length === 0"
+                                            class="px-4 py-3 text-gray-500 text-sm">
+                                            No se encontraron resultados.
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-blue-700 mt-1">Busca y selecciona usuarios para agregarlos como colaboradores
+                                    en esta sesión.</p>
+                            </div>
+
                             <div class="col-span-1 md:col-span-2">
                                 <label for="pro_horario" class="block text-sm font-medium text-blue-900 mb-1">Horario (Texto libre)</label>
                                 <input type="text" name="pro_horario" id="pro_horario" value="{{ old('pro_horario') }}"

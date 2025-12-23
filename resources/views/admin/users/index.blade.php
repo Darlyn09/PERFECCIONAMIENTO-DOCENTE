@@ -4,17 +4,17 @@
 
 @section('content')
     <div x-data="{ 
-                        selected: [], 
-                        allSelected: false,
-                        toggleAll() {
-                            this.allSelected = !this.allSelected;
-                            if (this.allSelected) {
-                                this.selected = {{ $usuarios->pluck('par_login')->toJson() }};
-                            } else {
-                                this.selected = [];
-                            }
-                        }
-                    }"
+                                selected: [], 
+                                allSelected: false,
+                                toggleAll() {
+                                    this.allSelected = !this.allSelected;
+                                    if (this.allSelected) {
+                                        this.selected = {{ $usuarios->pluck('par_login')->toJson() }};
+                                    } else {
+                                        this.selected = [];
+                                    }
+                                }
+                            }"
         class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 -m-4 p-4 sm:p-6 relative">
 
         {{-- Barras de Acción Flotante --}}
@@ -36,11 +36,11 @@
                 </template>
 
                 <button type="button" @click.prevent="$dispatch('confirm-action', { 
-                            title: 'Eliminar Usuarios Selecciónados', 
-                            message: '¿Estás seguro de eliminar ' + selected.length + ' usuarios? Esta acción no se puede deshacer.', 
-                            type: 'delete',
-                            formId: 'mass-delete-form' 
-                        })"
+                                    title: 'Eliminar Usuarios Selecciónados', 
+                                    message: '¿Estás seguro de eliminar ' + selected.length + ' usuarios? Esta acción no se puede deshacer.', 
+                                    type: 'delete',
+                                    formId: 'mass-delete-form' 
+                                })"
                     class="bg-red-500 hover:bg-red-600 text-white px-4 py-1.5 rounded-lg text-sm font-bold transition-colors flex items-center shadow-lg shadow-red-500/30">
                     <i class="fa fa-trash-alt mr-2"></i> Eliminar
                 </button>
@@ -103,6 +103,72 @@
 
                         {{-- Botones Acción --}}
                         <div class="flex flex-wrap gap-3">
+                            {{-- Botón Importar Excel --}}
+                            <div x-data="{ open: false }">
+                                <button @click="open = true"
+                                    class="inline-flex items-center justify-center px-4 py-3 bg-white/10 backdrop-blur-sm border border-white/20 text-white font-semibold rounded-xl hover:bg-emerald-500/20 hover:border-emerald-500/30 transition-all">
+                                    <i class="fas fa-file-excel mr-2 text-emerald-400"></i> Importar Masivo
+                                </button>
+
+                                {{-- Modal --}}
+                                <div x-show="open" class="fixed inset-0 z-50 flex items-center justify-center px-4 sm:px-6"
+                                    style="display: none;">
+                                    <div class="fixed inset-0 bg-slate-900/60 transition-opacity" @click="open = false">
+                                    </div>
+
+                                    <div
+                                        class="bg-white rounded-2xl shadow-2xl transform transition-all sm:max-w-lg w-full p-6 relative z-10">
+                                        <div class="flex items-center justify-between mb-5">
+                                            <h3 class="text-xl font-bold text-slate-800">Carga Masiva de Usuarios</h3>
+                                            <button @click="open = false" class="text-slate-400 hover:text-slate-500">
+                                                <i class="fas fa-times text-xl"></i>
+                                            </button>
+                                        </div>
+
+                                        <div
+                                            class="bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6 text-sm text-blue-800">
+                                            <p class="font-bold mb-1"><i class="fas fa-info-circle mr-1"></i> Instrucciones:
+                                            </p>
+                                            <p>Sube un archivo Excel (.xlsx) para crear o actualizar usuarios:</p>
+                                            <ul class="list-disc list-inside mt-2 ml-1 text-blue-700">
+                                                <li><b>correo</b> (Requerido)</li>
+                                                <li>nombres, apellidos</li>
+                                                <li>rut (login)</li>
+                                                <li>cargo, facultad, perfil</li>
+                                            </ul>
+                                        </div>
+
+                                        <form action="{{ route('admin.users.import') }}" method="POST"
+                                            enctype="multipart/form-data">
+                                            @csrf
+                                            <div class="mb-6">
+                                                <label class="block text-sm font-bold text-slate-700 mb-2">Seleccionar
+                                                    Archivo Excel</label>
+                                                <input type="file" name="file" accept=".xlsx,.xls,.numbers,.csv" required
+                                                    class="block w-full text-sm text-slate-500
+                                                                      file:mr-4 file:py-2.5 file:px-4
+                                                                      file:rounded-xl file:border-0
+                                                                      file:text-sm file:font-semibold
+                                                                      file:bg-blue-50 file:text-blue-700
+                                                                      hover:file:bg-blue-100
+                                                                      transition-all border border-slate-300 rounded-xl px-2 py-2">
+                                            </div>
+
+                                            <div class="flex justify-end gap-3">
+                                                <button type="button" @click="open = false"
+                                                    class="px-5 py-2.5 text-slate-500 hover:bg-slate-100 rounded-xl font-bold transition-colors">
+                                                    Cancelar
+                                                </button>
+                                                <button type="submit"
+                                                    class="px-5 py-2.5 bg-green-600 hover:bg-green-700 text-white rounded-xl font-bold shadow-lg shadow-green-600/30 transition-all">
+                                                    <i class="fas fa-upload mr-2"></i> Subir y Procesar
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+
                             <a href="{{ route('admin.users.export', request()->query()) }}" target="_blank"
                                 class="inline-flex items-center justify-center px-5 py-3 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl border border-white/10 transition-all backdrop-blur-sm">
                                 <i class="fas fa-file-excel mr-2 text-emerald-400"></i> Exportar Excel
@@ -287,12 +353,12 @@
                                     class="inline-block">
                                     @csrf @method('DELETE')
                                     <button type="button" @click.prevent="$dispatch('confirm-action', { 
-                                                        title: 'Eliminar Usuario', 
-                                                        message: '¿Estás seguro de que deseas eliminar este usuario?', 
-                                                        itemName: '{{ $u->par_nombre }} {{ $u->par_apellido }}',
-                                                        type: 'delete',
-                                                        formId: 'delete-form-mobile-{{ $u->par_login }}' 
-                                                    })"
+                                                                        title: 'Eliminar Usuario', 
+                                                                        message: '¿Estás seguro de que deseas eliminar este usuario?', 
+                                                                        itemName: '{{ $u->par_nombre }} {{ $u->par_apellido }}',
+                                                                        type: 'delete',
+                                                                        formId: 'delete-form-mobile-{{ $u->par_login }}' 
+                                                                    })"
                                         class="w-10 h-10 inline-flex items-center justify-center bg-red-100 text-red-600 rounded-xl hover:bg-red-200 transition-colors">
                                         <i class="fa fa-trash"></i>
                                     </button>
@@ -422,12 +488,12 @@
                                                 action="{{ route('admin.users.destroy', $u->par_login) }}" method="POST">
                                                 @csrf @method('DELETE')
                                                 <button type="button" @click.prevent="$dispatch('confirm-action', { 
-                                                                    title: 'Eliminar Usuario', 
-                                                                    message: '¿Estás seguro de que deseas eliminar este usuario?', 
-                                                                    itemName: '{{ $u->par_nombre }} {{ $u->par_apellido }}',
-                                                                    type: 'delete',
-                                                                    formId: 'delete-form-{{ $u->par_login }}' 
-                                                                })"
+                                                                                    title: 'Eliminar Usuario', 
+                                                                                    message: '¿Estás seguro de que deseas eliminar este usuario?', 
+                                                                                    itemName: '{{ $u->par_nombre }} {{ $u->par_apellido }}',
+                                                                                    type: 'delete',
+                                                                                    formId: 'delete-form-{{ $u->par_login }}' 
+                                                                                })"
                                                     class="inline-flex items-center justify-center w-10 h-10 bg-gradient-to-br from-red-500 to-red-700 text-white rounded-xl hover:from-red-600 hover:to-red-800 transition-all shadow-lg hover:shadow-xl hover:scale-105"
                                                     title="Eliminar">
                                                     <i class="fa fa-trash"></i>

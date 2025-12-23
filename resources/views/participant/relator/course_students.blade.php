@@ -41,9 +41,15 @@
                         <span class="mx-2">|</span> <i class="fa fa-hourglass-half mr-1"></i> {{ $curso->cur_horas }} Horas
                     </p>
                 </div>
-                <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
-                    ID: {{ $programa->pro_id }}
-                </span>
+                <div class="flex items-center gap-3">
+                    <a href="{{ route('participant.relator.program_grades', $programa->pro_id) }}" 
+                       class="inline-flex items-center px-3 py-1 bg-white border border-blue-200 text-blue-600 rounded-lg text-xs font-bold hover:bg-blue-50 transition-colors">
+                        <i class="fa fa-star mr-1.5"></i> Calificar
+                    </a>
+                    <span class="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
+                        ID: {{ $programa->pro_id }}
+                    </span>
+                </div>
             </div>
 
             <div class="overflow-x-auto">

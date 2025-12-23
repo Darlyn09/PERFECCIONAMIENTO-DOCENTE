@@ -26,6 +26,7 @@ class Programa extends Model
         'pro_cupos',
         'pro_hora_inicio',
         'pro_hora_termino',
+        'pro_estado',
     ];
 
     /**

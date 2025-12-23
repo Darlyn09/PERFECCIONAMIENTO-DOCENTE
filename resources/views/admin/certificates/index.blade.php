@@ -1,24 +1,7 @@
 @extends('layouts.admin')
 
 @section('content')
-    <div class="container mx-auto px-4 py-6" x-data="{ 
-                                                                showEditModal: false, 
-                                                                editUrl: '',
-
-                                                                closeEditModal() {
-                                                                    this.showEditModal = false;
-                                                                    this.editUrl = '';
-                                                                }
-                                                             }" @keydown.escape.window="closeEditModal()">
-
-        <!-- Listener for iframe message -->
-        <script>
-            window.addEventListener('message', function (event) {
-                if (event.data === 'reload_certificates') {
-                    window.location.reload();
-                }
-            });
-        </script>
+    <div class="container mx-auto px-4 py-6">
 
         {{-- Header Principal --}}
         <div class="mb-4 sm:mb-6">
@@ -153,9 +136,9 @@
                             <!-- Miniatura CSS -->
                             <div class="bg-white shadow-lg border border-gray-200 p-4 text-center transform scale-75 origin-center w-full max-w-[200px] aspect-[4/3] flex flex-col justify-center items-center"
                                 style="
-                                                                                                                                                                                                                        border-color: {{ $cert['settings']['border_color'] ?? '#ddd' }};
-                                                                                                                                                                                                                        border-width: {{ ($cert['settings']['border_width'] ?? 10) / 4 }}px;
-                                                                                                                                                                                                                     ">
+                                                                                                                                                                                                                                                border-color: {{ $cert['settings']['border_color'] ?? '#ddd' }};
+                                                                                                                                                                                                                                                border-width: {{ ($cert['settings']['border_width'] ?? 10) / 4 }}px;
+                                                                                                                                                                                                                                             ">
                                 <div class="text-[8px] font-bold mb-1 leading-tight"
                                     style="color: {{ $cert['settings']['title_color'] ?? '#000' }};">
                                     {{ Str::limit($cert['settings']['title_text'] ?? 'CERTIFICADO', 20) }}
@@ -174,12 +157,12 @@
                             </h5>
 
                             <div class="mb-4">
-                                @if(isset($cert['course_id']) && $cert['course_id'] && isset($courses[$cert['course_id']]))
+                                @if(isset($cert['referencia_id']) && $cert['referencia_id'] && isset($courses[$cert['referencia_id']]))
                                     <div class="flex items-start text-xs text-blue-600 bg-blue-50 p-2 rounded-lg">
                                         <i class="fas fa-link mt-0.5 mr-2"></i>
-                                        <span class="line-clamp-2">{{ $courses[$cert['course_id']] }}</span>
+                                        <span class="line-clamp-2">{{ $courses[$cert['referencia_id']] }}</span>
                                     </div>
-                                @elseif(isset($cert['is_default']) && $cert['is_default'])
+                                @elseif(isset($cert['tipo']) && $cert['tipo'] === 'defecto')
                                     <div class="flex items-center text-xs text-emerald-600 bg-emerald-50 p-2 rounded-lg">
                                         <i class="fas fa-globe mt-0.5 mr-2"></i>
                                         <span>Aplica a todos los cursos sin plantilla</span>
@@ -187,7 +170,7 @@
                                 @else
                                     <div class="flex items-center text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
                                         <i class="fas fa-exclamation-triangle mt-0.5 mr-2"></i>
-                                        <span>Sin asignación activa</span>
+                                        <span>Sin asignación activa ({{ $cert['tipo'] ?? 'Desconocido' }})</span>
                                     </div>
                                 @endif
                             </div>
@@ -205,13 +188,12 @@
                                         <i class="far fa-eye text-xs"></i>
                                     </a>
 
-                                    <!-- Edit Trigger -->
-                                    <button type="button"
-                                        @click="showEditModal = true; editUrl = '{{ route('admin.certificates.edit', ['id' => $cert['id'], 'mode' => 'modal']) }}' + '&t=' + Date.now()"
+                                    <!-- Edit Trigger (Direct Link) -->
+                                    <a href="{{ route('admin.certificates.edit', ['id' => $cert['id']]) }}"
                                         class="inline-flex items-center justify-center w-9 h-9 bg-gradient-to-br from-amber-400 to-amber-600 text-white rounded-xl hover:from-amber-500 hover:to-amber-700 transition-all shadow-md hover:shadow-lg hover:scale-105"
                                         title="Editar">
                                         <i class="fas fa-pencil-alt text-xs"></i>
-                                    </button>
+                                    </a>
 
                                     <form id="delete-certificate-{{ $cert['id'] }}"
                                         action="{{ route('admin.certificates.destroy', $cert['id']) }}" method="POST"
@@ -219,12 +201,12 @@
                                         @csrf
                                         @method('DELETE')
                                         <button type="button" @click="$dispatch('confirm-action', {
-                                                                                    title: 'Eliminar Plantilla',
-                                                                                    message: '¿Estás seguro de que deseas eliminar esta plantilla? Esta acción no se puede deshacer.',
-                                                                                    itemName: '{{ addslashes($cert['name']) }}',
-                                                                                    type: 'delete',
-                                                                                    formId: 'delete-certificate-{{ $cert['id'] }}'
-                                                                                })"
+                                                                                                            title: 'Eliminar Plantilla',
+                                                                                                            message: '¿Estás seguro de que deseas eliminar esta plantilla? Esta acción no se puede deshacer.',
+                                                                                                            itemName: '{{ addslashes($cert['name']) }}',
+                                                                                                            type: 'delete',
+                                                                                                            formId: 'delete-certificate-{{ $cert['id'] }}'
+                                                                                                        })"
                                             class="inline-flex items-center justify-center w-9 h-9 bg-gradient-to-br from-red-500 to-red-700 text-white rounded-xl hover:from-red-600 hover:to-red-800 transition-all shadow-md hover:shadow-lg hover:scale-105"
                                             title="Eliminar">
                                             <i class="far fa-trash-alt text-xs"></i>
@@ -242,47 +224,6 @@
                 {{ $certificates->appends(request()->query())->links() }}
             </div>
         @endif
-
-        <!-- Edit Modal (Iframe) -->
-        <div x-show="showEditModal" style="display: none;" class="fixed inset-0 z-50 overflow-y-auto"
-            aria-labelledby="modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-
-                <!-- Background overlay -->
-                <div x-show="showEditModal" x-transition:enter="ease-out duration-300" x-transition:enter-start="opacity-0"
-                    x-transition:enter-end="opacity-100" x-transition:leave="ease-in duration-200"
-                    x-transition:leave-start="opacity-100" x-transition:leave-end="opacity-0"
-                    class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" @click="closeEditModal()"></div>
-
-                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
-
-                <!-- Modal panel -->
-                <div x-show="showEditModal" x-transition:enter="ease-out duration-300"
-                    x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
-                    x-transition:leave="ease-in duration-200"
-                    x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
-                    x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-                    class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-6xl sm:w-full h-[90vh] flex flex-col relative z-50">
-
-                    <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4 border-b flex justify-between items-center">
-                        <h3 class="text-lg leading-6 font-medium text-gray-900">Editar Certificado</h3>
-                        <button @click="closeEditModal()" class="text-gray-400 hover:text-gray-500">
-                            <span class="sr-only">Cerrar</span>
-                            <i class="fas fa-times text-xl"></i>
-                        </button>
-                    </div>
-
-                    <div class="flex-1 bg-gray-50 relative">
-                        <template x-if="showEditModal && editUrl">
-                            <iframe :src="editUrl" class="w-full h-full absolute inset-0 theme-iframe"
-                                frameborder="0"></iframe>
-                        </template>
-                    </div>
-                </div>
-            </div>
-        </div>
-
 
     </div>
 @endsection

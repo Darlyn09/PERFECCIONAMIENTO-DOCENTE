@@ -18,6 +18,8 @@
 </head>
 
 <body class="p-4">
+    <!-- Debug Marker -->
+    <div style="display:none;">LAYOUT LOADED</div>
     @yield('content')
 </body>
 

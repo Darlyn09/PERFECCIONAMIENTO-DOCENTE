@@ -42,7 +42,7 @@
                         </svg>
                     </div>
                     <div>
-                        <h1 class="text-3xl font-bold text-white mb-2">Editar Sesión</h1>
+                        <h1 class="text-3xl font-bold text-white mb-2">Editar Sesión (V2)</h1>
                         <p class="text-indigo-200 text-sm max-w-xl leading-relaxed opacity-90">
                             Curso: <span
                                 class="text-amber-400 font-semibold">{{ $programa->curso->cur_nombre ?? 'Curso' }}</span>
@@ -175,32 +175,88 @@
                                 </div>
                             </div>
 
-                            <div class="space-y-2">
+                            <div class="col-span-1 sm:col-span-2 space-y-2" x-data="{
+                                        search: '',
+                                        open: false,
+                                        selected: [], // Se llenará en init()
+                                        users: {{ $participantes->map(fn($p) => ['id' => $p->par_login, 'name' => $p->par_nombre . ' ' . $p->par_apellido])->toJson() }},
+                                        init() {
+                                            // Cargar colaboradores existentes desde el string separado por comas
+                                            let current = '{{ $programa->pro_colaboradores ?? '' }}';
+                                            if(current) {
+                                                let names = current.split(',').map(s => s.trim()).filter(s => s.length > 0);
+                                                // Intentar matchear nombres con usuarios (best effort)
+                                                // O simplemente mostrarlos como tags aunque no sean usuarios del sistema (para legacy)
+                                                names.forEach(name => {
+                                                    // Buscar si existe en users por nombre
+                                                    let existing = this.users.find(u => u.name === name);
+                                                    if(existing) {
+                                                        this.selected.push(existing);
+                                                    } else {
+                                                        // Si es un nombre libre no vinculado, agregarlo como objeto simple
+                                                        this.selected.push({ id: name, name: name, manual: true });
+                                                    }
+                                                });
+                                            }
+                                        },
+                                        add(user) {
+                                            if (!this.selected.some(u => u.id === user.id)) {
+                                                this.selected.push(user);
+                                            }
+                                            this.search = '';
+                                            this.open = false;
+                                        },
+                                        remove(index) {
+                                            this.selected.splice(index, 1);
+                                        },
+                                        get valueString() {
+                                            return this.selected.map(u => u.name).join(', ');
+                                        }
+                                    }">
                                 <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide"
                                     for="pro_colaboradores">
-                                    Colaboradores (Texto Libre)
+                                    Colaboradores (Usuarios del Sistema)
                                 </label>
-                                <input type="text" name="pro_colaboradores" id="pro_colaboradores"
-                                    value="{{ old('pro_colaboradores', $programa->pro_colaboradores) }}"
-                                    class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm">
-                            </div>
 
-                            <div class="col-span-1 sm:col-span-2 space-y-2">
-                                <label class="block text-sm font-bold text-slate-700 uppercase tracking-wide" for="relatores">
-                                    Docentes Colaboradores (Selección Múltiple)
-                                </label>
-                                <div class="relative">
-                                    <select name="relatores[]" id="relatores" multiple
-                                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm h-32">
-                                        @foreach($relatores as $relator)
-                                            <option value="{{ $relator->rel_login }}" 
-                                                {{ (collect(old('relatores', $programa->relatores->pluck('rel_login')))->contains($relator->rel_login)) ? 'selected' : '' }}>
-                                                {{ $relator->rel_nombre }} {{ $relator->rel_apellido }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    <p class="text-xs text-slate-400 mt-1">Mantén presionado Ctrl (Windows) o Command (Mac) para seleccionar varios.</p>
+                                <input type="hidden" name="pro_colaboradores" :value="valueString">
+
+                                <div class="flex flex-wrap gap-2 mb-2" x-show="selected.length > 0">
+                                    <template x-for="(user, index) in selected" :key="index">
+                                        <span
+                                            class="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
+                                            <span x-text="user.name"></span>
+                                            <button type="button" @click="remove(index)"
+                                                class="ml-2 text-blue-600 hover:text-blue-900 focus:outline-none">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </span>
+                                    </template>
                                 </div>
+
+                                <div class="relative">
+                                    <input type="text" x-model="search" @focus="open = true" @click.away="open = false"
+                                        placeholder="Buscar usuario..."
+                                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:border-blue-institutional focus:ring-2 focus:ring-blue-200 focus:bg-white text-slate-700 font-medium transition-all shadow-sm">
+
+                                    <div x-show="open && search.length > 0"
+                                        class="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-xl shadow-lg max-h-60 overflow-auto"
+                                        style="display: none;">
+                                        <template
+                                            x-for="user in users.filter(u => u.name.toLowerCase().includes(search.toLowerCase()))"
+                                            :key="user.id">
+                                            <div @click="add(user)"
+                                                class="px-4 py-2 hover:bg-blue-50 cursor-pointer text-slate-700 transition-colors">
+                                                <span x-text="user.name"></span>
+                                                <span class="text-xs text-slate-400" x-text="'(' + user.id + ')'"></span>
+                                            </div>
+                                        </template>
+                                        <div x-show="users.filter(u => u.name.toLowerCase().includes(search.toLowerCase())).length === 0"
+                                            class="px-4 py-3 text-slate-500 text-sm">
+                                            No se encontraron resultados.
+                                        </div>
+                                    </div>
+                                </div>
+                                <p class="text-xs text-slate-500 mt-1">Busca usuarios o mantén los nombres existentes.</p>
                             </div>
                         </div>
 

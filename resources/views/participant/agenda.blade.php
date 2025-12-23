@@ -134,7 +134,7 @@
                     <h2 class="text-xl font-bold text-gray-800">Próximas Actividades</h2>
                 </div>
 
-                @if($upcomingEvents->isEmpty() && $upcomingCourses->isEmpty())
+                @if($upcomingEvents->isEmpty() && $upcomingAvailableCourses->isEmpty() && $upcomingEnrolledCourses->isEmpty())
                     <div class="bg-white rounded-xl p-8 text-center border border-gray-100 shadow-sm">
                         <div class="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-50 mb-4">
                             <i class="fa fa-calendar-day text-gray-400 text-2xl"></i>
@@ -180,8 +180,51 @@
                             </div>
                         @endforeach
 
+                        {{-- CURSOS PROXIMOS INSCRITOS (Agregado) --}}
+                        @foreach($upcomingEnrolledCourses as $course)
+                            <div
+                                class="relative bg-white p-6 rounded-xl shadow-sm border border-emerald-100 hover:border-emerald-300 transition-colors">
+                                <div
+                                    class="absolute -left-[41px] top-6 w-5 h-5 bg-emerald-500 rounded-full border-4 border-white shadow-sm">
+                                </div>
+
+                                <div class="flex flex-col md:flex-row md:items-start justify-between">
+                                    <div>
+                                        <div class="flex items-center space-x-2 mb-2">
+                                            <span
+                                                class="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-100 text-emerald-700">Inscrito
+                                                - Próximamente</span>
+                                            <span class="text-sm font-semibold text-gray-500"><i class="fa fa-play mr-1"></i>
+                                                Inicia:
+                                                {{ \Carbon\Carbon::parse($course->cur_fecha_inicio)->format('d F, Y') }}</span>
+                                        </div>
+                                        <h3 class="text-lg font-bold text-gray-800 mb-2">{{ $course->cur_nombre }}</h3>
+                                        <p class="text-gray-600 text-sm mb-4 max-w-2xl">{{ $course->cur_descripcion }}</p>
+
+                                        @if($course->programas->isNotEmpty())
+                                            <div class="flex flex-wrap gap-4 text-xs text-gray-500">
+                                                @foreach($course->programas as $prog)
+                                                    <span class="flex items-center bg-gray-50 px-2 py-1 rounded">
+                                                        <i class="fa fa-clock mr-1 text-emerald-400"></i>
+                                                        {{ $prog->pro_horario ?? 'Horario por definir' }}
+                                                    </span>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+
+                                    <div class="flex-shrink-0 mt-4 md:mt-0">
+                                        <a href="{{ route('participant.my_courses') }}"
+                                            class="inline-flex items-center px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm shadow-emerald-200">
+                                            Ver en Mis Cursos
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+
                         {{-- CURSOS PROXIMOS DISPONIBLES --}}
-                        @foreach($upcomingCourses as $course)
+                        @foreach($upcomingAvailableCourses as $course)
                             <div
                                 class="relative bg-white p-6 rounded-xl shadow-sm border border-gray-100 hover:border-indigo-300 transition-colors">
                                 <div
