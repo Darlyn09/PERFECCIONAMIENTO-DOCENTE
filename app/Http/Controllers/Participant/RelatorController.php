@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Participant;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Barryvdh\DomPDF\Facade\Pdf;
 use App\Models\Curso;
 use App\Models\Inscripcion;
 use App\Models\Informacion;
@@ -349,7 +350,7 @@ class RelatorController extends Controller
 
         $html = $this->applyReplacements($generated['html'], $replacements);
 
-        $pdf = \PDF::loadHTML($html);
+        $pdf = Pdf::loadHTML($html);
         $pdf->setPaper([0, 0, $generated['css']['width'] ?? 800, $generated['css']['height'] ?? 600]);
 
         return $pdf->download('Certificado_Relator_' . $programId . '.pdf');

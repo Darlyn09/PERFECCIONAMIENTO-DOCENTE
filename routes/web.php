@@ -187,7 +187,7 @@ Route::prefix('portal')->name('participant.')->group(function () {
 
         // Certificados
         // Certificados
-        Route::get('/certificate/{login}/{courseId}', [\App\Http\Controllers\Admin\CertificateController::class, 'download'])->name('certificates.download');
+        Route::get('/certificate/{login}/{courseId}', [CertificateController::class, 'download'])->name('certificates.download');
         Route::post('/rate-course', [\App\Http\Controllers\Participant\DashboardController::class, 'rateCourse'])->name('courses.rate');
         Route::post('/feedback/{id}', [App\Http\Controllers\Participant\DashboardController::class, 'saveFeedback'])->name('save_feedback');
 
