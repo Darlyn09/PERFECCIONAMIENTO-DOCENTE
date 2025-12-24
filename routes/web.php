@@ -33,6 +33,7 @@ Route::post('login', [AuthController::class, 'login']);
 Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () {
+    Route::any('/certificates/preview', [CertificateController::class, 'preview'])->name('certificates.preview');
     Route::get('/', [AdminController::class, 'index'])->name('dashboard');
 
     // Gestión Académica
@@ -131,7 +132,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::delete('/categorias/{id}', [App\Http\Controllers\CategoriaController::class, 'destroy'])->name('categorias.destroy');
 
     // Gestión de Certificados (Plantillas)
-    Route::match(['get', 'post'], '/certificates/preview', [CertificateController::class, 'preview'])->name('certificates.preview');
+    // Route::match(['get', 'post'], '/certificates/preview', [CertificateController::class, 'preview'])->name('certificates.preview'); // Moved to top
     Route::get('/certificates', [CertificateController::class, 'index'])->name('certificates.index');
     Route::get('/certificates/create', [CertificateController::class, 'create'])->name('certificates.create');
     Route::post('/certificates', [CertificateController::class, 'store'])->name('certificates.store');

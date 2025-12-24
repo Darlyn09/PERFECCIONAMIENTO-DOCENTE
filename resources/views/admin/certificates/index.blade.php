@@ -115,17 +115,18 @@
 
                         <!-- Preview Header (Mini Visual) -->
                         <div class="h-48 relative overflow-hidden flex items-center justify-center"
-                            style="background-color: {{ $cert['settings']['bg_color'] ?? '#f8fafc' }}; {{ isset($cert['bg_image_url']) && $cert['bg_image_url'] ? "background-image: url('" . $cert['bg_image_url'] . "'); background-size: cover; background-position: center;" : '' }}">
+                            style="background-color: {{ $cert->getConfig('bg_color', '#f8fafc') }}; 
+                                                                       {{ $cert->imagen_fondo ? "background-image: url('" . asset('storage/' . $cert->imagen_fondo) . "'); background-size: cover; background-position: center;" : '' }}">
 
                             <!-- Badges -->
-                            <div class="absolute top-3 left-3 z-10">
-                                @if(isset($cert['is_default']) && $cert['is_default'])
+                            <div class="absolute top-3 left-3 z-10 flex flex-col gap-1">
+                                @if($cert->tipo == 'default')
                                     <span
                                         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-100 text-emerald-800 shadow-sm border border-emerald-200">
                                         <i class="fas fa-star mr-1 text-emerald-500"></i> Por Defecto
                                     </span>
                                 @endif
-                                @if(isset($cert['course_id']) && $cert['course_id'])
+                                @if($cert->referencia_id)
                                     <span
                                         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 shadow-sm border border-blue-200">
                                         <i class="fas fa-book mr-1 text-blue-500"></i> Curso Específico
@@ -135,16 +136,15 @@
 
                             <!-- Miniatura CSS -->
                             <div class="bg-white shadow-lg border border-gray-200 p-4 text-center transform scale-75 origin-center w-full max-w-[200px] aspect-[4/3] flex flex-col justify-center items-center"
-                                style="
-                                                                                                                                                                                                                                                border-color: {{ $cert['settings']['border_color'] ?? '#ddd' }};
-                                                                                                                                                                                                                                                border-width: {{ ($cert['settings']['border_width'] ?? 10) / 4 }}px;
-                                                                                                                                                                                                                                             ">
+                                style="border-color: {{ $cert->getConfig('border_color', '#ddd') }};
+                                                                           border-width: {{ ($cert->getConfig('border_width', 10) / 4) }}px;">
+
                                 <div class="text-[8px] font-bold mb-1 leading-tight"
-                                    style="color: {{ $cert['settings']['title_color'] ?? '#000' }};">
-                                    {{ Str::limit($cert['settings']['title_text'] ?? 'CERTIFICADO', 20) }}
+                                    style="color: {{ $cert->getConfig('title_color', '#000') }};">
+                                    {{ Str::limit($cert->getConfig('title_text', 'CERTIFICADO'), 20) }}
                                 </div>
                                 <div class="text-[6px] text-gray-500 mb-1">
-                                    {{ Str::limit($cert['settings']['body_text'] ?? 'Otorgado a', 30) }}
+                                    {{ Str::limit($cert->getConfig('body_text', 'Otorgado a'), 30) }}
                                 </div>
                                 <div class="text-[8px] font-bold mb-1">ALUMNO EJEMPLO</div>
                                 <div class="w-16 h-px bg-gray-300 mx-auto mt-2"></div>
@@ -152,17 +152,17 @@
                         </div>
 
                         <div class="p-5 flex-1 flex flex-col">
-                            <h5 class="text-lg font-bold text-gray-800 mb-2 truncate" title="{{ $cert['name'] }}">
-                                {{ $cert['name'] }}
+                            <h5 class="text-lg font-bold text-gray-800 mb-2 truncate" title="{{ $cert->nombre }}">
+                                {{ $cert->nombre }}
                             </h5>
 
                             <div class="mb-4">
-                                @if(isset($cert['referencia_id']) && $cert['referencia_id'] && isset($courses[$cert['referencia_id']]))
+                                @if($cert->referencia_id && $cert->curso)
                                     <div class="flex items-start text-xs text-blue-600 bg-blue-50 p-2 rounded-lg">
                                         <i class="fas fa-link mt-0.5 mr-2"></i>
-                                        <span class="line-clamp-2">{{ $courses[$cert['referencia_id']] }}</span>
+                                        <span class="line-clamp-2">{{ $cert->curso->cur_nombre }}</span>
                                     </div>
-                                @elseif(isset($cert['tipo']) && $cert['tipo'] === 'defecto')
+                                @elseif($cert->tipo === 'default')
                                     <div class="flex items-center text-xs text-emerald-600 bg-emerald-50 p-2 rounded-lg">
                                         <i class="fas fa-globe mt-0.5 mr-2"></i>
                                         <span>Aplica a todos los cursos sin plantilla</span>
@@ -170,7 +170,7 @@
                                 @else
                                     <div class="flex items-center text-xs text-amber-600 bg-amber-50 p-2 rounded-lg">
                                         <i class="fas fa-exclamation-triangle mt-0.5 mr-2"></i>
-                                        <span>Sin asignación activa ({{ $cert['tipo'] ?? 'Desconocido' }})</span>
+                                        <span>Sin asignación activa</span>
                                     </div>
                                 @endif
                             </div>
@@ -178,35 +178,35 @@
                             <div class="mt-auto pt-4 border-t border-gray-50 flex items-center justify-between">
                                 <span class="text-xs text-gray-400 font-medium">
                                     <i class="far fa-clock mr-1"></i>
-                                    {{ \Carbon\Carbon::parse($cert['updated_at'])->diffForHumans() }}
+                                    {{ $cert->updated_at->diffForHumans() }}
                                 </span>
 
                                 <div class="flex items-center space-x-2">
-                                    <a href="{{ route('admin.certificates.preview', ['id' => $cert['id']]) }}" target="_blank"
+                                    <a href="{{ route('admin.certificates.preview', ['id' => $cert->id]) }}" target="_blank"
                                         class="inline-flex items-center justify-center w-9 h-9 bg-gradient-to-br from-blue-500 to-blue-700 text-white rounded-xl hover:from-blue-600 hover:to-blue-800 transition-all shadow-md hover:shadow-lg hover:scale-105"
                                         title="Vista Previa">
                                         <i class="far fa-eye text-xs"></i>
                                     </a>
 
                                     <!-- Edit Trigger (Direct Link) -->
-                                    <a href="{{ route('admin.certificates.edit', ['id' => $cert['id']]) }}"
+                                    <a href="{{ route('admin.certificates.edit', ['id' => $cert->id]) }}"
                                         class="inline-flex items-center justify-center w-9 h-9 bg-gradient-to-br from-amber-400 to-amber-600 text-white rounded-xl hover:from-amber-500 hover:to-amber-700 transition-all shadow-md hover:shadow-lg hover:scale-105"
                                         title="Editar">
                                         <i class="fas fa-pencil-alt text-xs"></i>
                                     </a>
 
-                                    <form id="delete-certificate-{{ $cert['id'] }}"
-                                        action="{{ route('admin.certificates.destroy', $cert['id']) }}" method="POST"
-                                        class="inline">
+                                    <form id="delete-certificate-{{ $cert->id }}"
+                                        action="{{ route('admin.certificates.destroy', $cert->id) }}" method="POST" class="inline">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="button" @click="$dispatch('confirm-action', {
-                                                                                                            title: 'Eliminar Plantilla',
-                                                                                                            message: '¿Estás seguro de que deseas eliminar esta plantilla? Esta acción no se puede deshacer.',
-                                                                                                            itemName: '{{ addslashes($cert['name']) }}',
-                                                                                                            type: 'delete',
-                                                                                                            formId: 'delete-certificate-{{ $cert['id'] }}'
-                                                                                                        })"
+                                        <button type="button"
+                                            @click="$dispatch('confirm-action', {
+                                                                                                                                                title: 'Eliminar Plantilla',
+                                                                                                                                                message: '¿Estás seguro de que deseas eliminar esta plantilla? Esta acción no se puede deshacer.',
+                                                                                                                                                itemName: '{{ addslashes($cert['name']) }}',
+                                                                                                                                                type: 'delete',
+                                                                                                                                                formId: 'delete-certificate-{{ $cert['id'] }}'
+                                                                                                                                            })"
                                             class="inline-flex items-center justify-center w-9 h-9 bg-gradient-to-br from-red-500 to-red-700 text-white rounded-xl hover:from-red-600 hover:to-red-800 transition-all shadow-md hover:shadow-lg hover:scale-105"
                                             title="Eliminar">
                                             <i class="far fa-trash-alt text-xs"></i>

@@ -12,12 +12,37 @@ use App\Models\Inscripcion;
 use App\Models\Certificado;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class CertificateController extends Controller
 {
+    use \App\Traits\CertificateGeneratorTrait;
+
     private function getCourses()
     {
         return Curso::orderBy('cur_nombre')->get(['cur_id', 'cur_nombre']);
+    }
+
+    private function getDimensions($size, $orientation)
+    {
+        // Standard in pixels (96 DPI approx)
+        // Letter: 816 x 1056
+        // A4: 794 x 1123
+
+        $sizes = [
+            'letter' => ['w' => 816, 'h' => 1056],
+            'a4' => ['w' => 794, 'h' => 1123],
+            'custom' => ['w' => 800, 'h' => 600] // Default fallback
+        ];
+
+        // Default to custom if unknown
+        $dims = $sizes[$size] ?? $sizes['custom'];
+
+        if ($orientation === 'landscape') {
+            return ['width' => max($dims['w'], $dims['h']), 'height' => min($dims['w'], $dims['h'])];
+        } else {
+            return ['width' => min($dims['w'], $dims['h']), 'height' => max($dims['w'], $dims['h'])];
+        }
     }
 
 
@@ -59,16 +84,25 @@ class CertificateController extends Controller
         // Actually, the previous implementation likely didn't handle file preview instantly without upload.
         // Let's check how form handles it. It posts FormData.
 
-        // We'll construct a mock object
-        // Structurally mock the cert object for generateHtmlCss
+        // Calculate Dimensions (Logic Fix)
+        $pageSize = $request->input('page_size', 'custom');
+        $orientation = $request->input('orientation', 'landscape');
+        $dims = $this->getDimensions($pageSize, $orientation);
+
+        // If custom inputs exist, override
+        if ($pageSize === 'custom' && $request->has('width')) {
+            $dims['width'] = $request->input('width');
+            $dims['height'] = $request->input('height');
+        }
+
         $certData = [
             'settings' => $config,
-            'width' => $request->width ?? 800,
-            'height' => $request->height ?? 600,
+            'width' => $dims['width'],
+            'height' => $dims['height'],
             'signature_url' => null,
             'bg_image_url' => null,
-            'page_size' => $request->page_size ?? 'custom',
-            'orientation' => $request->orientation ?? 'landscape'
+            'page_size' => $pageSize,
+            'orientation' => $orientation
         ];
 
         // Handle Images Base64 for preview
@@ -99,21 +133,19 @@ class CertificateController extends Controller
             '{url_verificacion}' => '#'
         ];
 
-        // Render the view. We need a 'certificates.preview' view. 
-        // Does it exist? Let's check. If not, use 'admin.certificates.preview_render' or similar.
-        // Looking at routes: Route::match(['get', 'post'], '/certificates/preview', [CertificateController::class, 'preview'])
-        // We will assume 'admin.certificates.preview' is the view name for the visual layout.
-
         // Generate raw HTML/CSS
         $generated = $this->generateHtmlCss($certData, true);
 
         // Apply replacements
         $html = $this->applyReplacements($generated['html'], $replacements);
         $css = $generated['css'];
-        $width = $certData['width'];
-        $height = $certData['height'];
 
-        return view('admin.certificates.preview', compact('html', 'css', 'width', 'height'));
+        return view('admin.certificates.preview', [
+            'width' => $certData['width'],
+            'height' => $certData['height'],
+            'html' => $html,
+            'css' => $generated['css']
+        ]);
     }
 
     public function index(Request $request)
@@ -126,7 +158,7 @@ class CertificateController extends Controller
         }
 
         // Ordenar por fecha descendente
-        $query->orderBy('updated_at', 'desc');
+        $query->with('curso')->orderBy('updated_at', 'desc');
 
         $certificates = $query->paginate(9);
 
@@ -144,6 +176,7 @@ class CertificateController extends Controller
         // aunque ahora la tabla permite 'tipo'='curso' y 'referencia_id'.
         // Podemos listar todos los cursos y eventos.
 
+        $courses = Curso::pluck('cur_nombre', 'cur_id');
         return view('admin.certificates.form', compact('courses'));
     }
 
@@ -402,7 +435,6 @@ class CertificateController extends Controller
         return redirect()->route('admin.certificates.index')->with('success', 'Certificado eliminado.');
     }
 
-    use \App\Traits\CertificateGeneratorTrait;
 
     public function download($login, $courseId)
     {
@@ -502,10 +534,10 @@ class CertificateController extends Controller
 
             $html = $this->applyReplacements($generated['html'], $replacements);
 
-            $pdf = \PDF::loadHTML($html);
+            $pdf = Pdf::loadHTML($html);
             $pdf->setPaper([0, 0, $generated['css']['width'] ?? 800, $generated['css']['height'] ?? 600]);
 
-            return $pdf->download('Certificado.pdf');
+            return $pdf->download('Certificado_Admin_' . $login . '.pdf');
 
         } catch (\Exception $e) {
             return back()->with('error', 'Error generando certificado: ' . $e->getMessage());
@@ -514,7 +546,7 @@ class CertificateController extends Controller
 
     public function downloadRelatorCertificate(Request $request, $programId, $relLogin)
     {
-        // Hardcoded logic for now
-        return parent::downloadRelatorCertificate($request, $programId, $relLogin);
+        // return parent::downloadRelatorCertificate($request, $programId, $relLogin);
+        abort(404, 'Método no implementado');
     }
 }

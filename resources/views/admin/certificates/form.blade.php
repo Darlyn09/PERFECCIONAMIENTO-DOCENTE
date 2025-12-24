@@ -1,46 +1,52 @@
 @extends($layout ?? 'layouts.admin')
 
 @section('content')
-    <div class="{{ request('mode') == 'modal' ? 'w-full px-2 py-4' : 'container mx-auto px-4 py-6' }}" x-data="{ 
-                                                                            activeTab: 'general',
-                                                                            isLoadingPreview: false,
-                                                                            certType: '{{ old('type', isset($certificate) ? data_get($certificate, 'tipo') : 'defecto') }}',
+    <script src="https://cdn.jsdelivr.net/npm/@jaames/iro@5"></script>
+    <div class="{{ request('mode') == 'modal' ? 'w-full px-2 py-4' : 'container mx-auto px-4 py-6' }}"
+        x-data="{ 
+                                                                                                                                        activeTab: 'general',
+                                                                                                                                        isLoadingPreview: false,
+                                                                                                                                        certType: '{{ old('type', isset($certificate) ? data_get($certificate, 'tipo') : 'defecto') }}',
 
-                                                                            init() {
-                                                                               // Initial load
-                                                                               this.updatePreview();
-                                                                            },
+                                                                                                                                        init() {
+                                                                                                                                           // Initial load
+                                                                                                                                           this.updatePreview();
+                                                                                                                                        },
 
-                                                                            updatePreview() {
-                                                                                if (typeof tinymce !== 'undefined' && tinymce.activeEditor) {
-                                                                                    tinymce.triggerSave();
-                                                                                }
-                                                                                this.isLoadingPreview = true;
-                                                                                const form = document.getElementById('certForm');
-                                                                                const formData = new FormData(form);
+                                                                                                                                        updatePreview() {
+                                                                                                                                            if (typeof tinymce !== 'undefined' && tinymce.activeEditor) {
+                                                                                                                                                tinymce.triggerSave();
+                                                                                                                                            }
+                                                                                                                                            this.isLoadingPreview = true;
+                                                                                                                                            const form = document.getElementById('certForm');
+                                                                                                                                            const formData = new FormData(form);
 
-                                                                                fetch('{{ route('admin.certificates.preview') }}', {
-                                                                                    method: 'POST',
-                                                                                    headers: {
-                                                                                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                                                                                    },
-                                                                                    body: formData
-                                                                                })
-                                                                                .then(response => response.text())
-                                                                                .then(html => {
-                                                                                    const iframe = document.getElementById('previewFrame');
-                                                                                    const doc = iframe.contentDocument || iframe.contentWindow.document;
-                                                                                    doc.open();
-                                                                                    doc.write(html);
-                                                                                    doc.close();
-                                                                                    this.isLoadingPreview = false;
-                                                                                })
-                                                                                .catch(error => {
-                                                                                    console.error('Error updating preview:', error);
-                                                                                    this.isLoadingPreview = false;
-                                                                                });
-                                                                            }
-                                                                        }" x-init="init()">
+                                                                                                                                            const url = '{{ route('admin.certificates.preview') }}';
+                                                                                                                                            // alert('Debug URL: ' + url); // Uncomment if needed
+
+                                                                                                                                            fetch(url, {
+                                                                                                                                                method: 'POST',
+                                                                                                                                                headers: {
+                                                                                                                                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                                                                                                                                },
+                                                                                                                                                body: formData
+                                                                                                                                            })
+                                                                                                                                            .then(response => response.text())
+                                                                                                                                            .then(html => {
+                                                                                                                                                const iframe = document.getElementById('previewFrame');
+                                                                                                                                                const doc = iframe.contentDocument || iframe.contentWindow.document;
+                                                                                                                                                doc.open();
+                                                                                                                                                doc.write(html);
+                                                                                                                                                doc.close();
+                                                                                                                                                this.isLoadingPreview = false;
+                                                                                                                                            })
+                                                                                                                                            .catch(error => {
+                                                                                                                                                console.error('Error updating preview:', error);
+                                                                                                                                                // alert('Preview Error: ' + error); 
+                                                                                                                                                this.isLoadingPreview = false;
+                                                                                                                                            });
+                                                                                                                                        }
+                                                                                                                                    }" x-init="init()">
 
 
         <!-- Header -->
@@ -88,7 +94,7 @@
                         @method('PUT')
                     @endif
 
-                    <div class="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+                    <div class="bg-white rounded-xl shadow-lg border border-gray-200">
                         <!-- Hidden Dimensions -->
                         <input type="hidden" name="width" value="{{ $certificate['width'] ?? 800 }}">
                         <input type="hidden" name="height" value="{{ $certificate['height'] ?? 600 }}">
@@ -165,33 +171,34 @@
 
                                         <!-- Custom Searchable Select -->
                                         <div x-data="{
-                                                                            options: [
-                                                                                @foreach($courses as $curso)
-                                                                                    { id: '{{ $curso->cur_id }}', label: '{{ e($curso->cur_nombre) }}' },
-                                                                                @endforeach
-                                                                            ],
-                                                                            open: false,
-                                                                            search: '',
-                                                                            selectedId: '{{ old('referencia_id', isset($certificate) ? data_get($certificate, 'referencia_id') : '') }}',
+                                                                                                                                        options: [
+                                                                                                                                            @foreach($courses as $id => $name)
+                                                                                                                                                { id: '{{ $id }}', label: '{{ e($name) }}' },
+                                                                                                                                            @endforeach
+                                                                                                                                        ],
+                                                                                                                                        open: false,
+                                                                                                                                        search: '',
+                                                                                                                                        selectedId: '{{ old('referencia_id', isset($certificate) ? data_get($certificate, 'referencia_id') : '') }}',
 
-                                                                            get selectedLabel() {
-                                                                                const selected = this.options.find(o => o.id == this.selectedId);
-                                                                                return selected ? selected.label : '-- Seleccionar --';
-                                                                            },
+                                                                                                                                        get selectedLabel() {
+                                                                                                                                            const selected = this.options.find(o => o.id == this.selectedId);
+                                                                                                                                            return selected ? selected.label : '-- Seleccionar --';
+                                                                                                                                        },
 
-                                                                            get filteredOptions() {
-                                                                                if (this.search === '') return this.options;
-                                                                                return this.options.filter(option => 
-                                                                                    option.label.toLowerCase().includes(this.search.toLowerCase())
-                                                                                );
-                                                                            },
+                                                                                                                                        get filteredOptions() {
+                                                                                                                                            if (this.search === '') return this.options;
+                                                                                                                                            return this.options.filter(option => 
+                                                                                                                                                option.label.toLowerCase().includes(this.search.toLowerCase())
+                                                                                                                                            );
+                                                                                                                                        },
 
-                                                                            select(option) {
-                                                                                this.selectedId = option.id;
-                                                                                this.open = false;
-                                                                                this.search = '';
-                                                                            }
-                                                                        }" class="relative">
+                                                                                                                                        select(option) {
+                                                                                                                                            this.selectedId = option.id;
+                                                                                                                                            this.open = false;
+                                                                                                                                            this.search = '';
+                                                                                                                                        }
+                                                                                                                                    }"
+                                            class="relative">
 
                                             <input type="hidden" name="referencia_id" :value="selectedId">
 
@@ -297,14 +304,54 @@
                                 <div class="bg-white p-4 rounded-xl border border-gray-300 shadow-sm space-y-4">
                                     <h6 class="text-xs font-bold text-gray-500 uppercase">Configuración de Fondo</h6>
                                     <div>
-                                        <label class="block text-sm font-bold text-gray-700 mb-1">Color de Fondo</label>
-                                        <div class="flex items-center space-x-2">
-                                            <input type="color" name="bg_color"
-                                                class="h-10 w-12 rounded border border-gray-300 cursor-pointer"
-                                                value="{{ old('bg_color', isset($certificate) ? $certificate->getConfig('bg_color') : '#ffffff') }}">
-                                            <input type="text" readonly
-                                                class="flex-1 rounded-lg border border-gray-300 bg-gray-100 text-gray-700 font-mono px-3 py-2"
-                                                value="{{ old('bg_color', isset($certificate) ? $certificate->getConfig('bg_color') : '#ffffff') }}">
+                                        <div class="mb-5">
+                                            <label class="block text-sm font-bold text-gray-700 mb-1">Color de Fondo</label>
+                                            <div x-data="{ 
+                                                            open: false,
+                                                            color: '{{ old('bg_color', isset($certificate) ? $certificate->getConfig('bg_color') : '#ffffff') }}',
+                                                            picker: null,
+                                                            initPicker() {
+                                                                if (this.picker) return;
+                                                                console.log('Initializing Background Picker'); // Debug
+                                                                this.picker = new iro.ColorPicker(this.$refs.pickerContainer, {
+                                                                    width: 160,
+                                                                    color: this.color,
+                                                                    padding: 0,
+                                                                    layout: [
+                                                                        { component: iro.ui.Wheel, options: {} },
+                                                                        { component: iro.ui.Slider, options: { sliderType: 'value' } },
+                                                                    ]
+                                                                });
+                                                                this.picker.on('color:change', (c) => {
+                                                                    this.color = c.hexString;
+                                                                    updatePreview();
+                                                                });
+                                                            }
+                                                        }" class="relative z-50">
+                                                <input type="hidden" name="bg_color" x-model="color">
+
+                                                <div class="flex items-center gap-3">
+                                                    <!-- Trigger Button -->
+                                                    <button type="button"
+                                                        @click="open = !open; if(open) $nextTick(() => initPicker())"
+                                                        @click.away="open = false"
+                                                        class="relative w-10 h-10 rounded-full shadow-md ring-2 ring-gray-100 transition-transform hover:scale-105 focus:outline-none"
+                                                        style="background: conic-gradient(from 0deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);">
+                                                        <div class="absolute inset-1.5 rounded-full border-2 border-white shadow-inner"
+                                                            :style="'background-color: ' + color"></div>
+                                                    </button>
+                                                    <div class="text-xs text-gray-500 font-mono" x-text="color"></div>
+                                                </div>
+
+                                                <!-- Custom Popover -->
+                                                <div x-show="open" x-transition style="display: none;"
+                                                    class="absolute top-12 left-0 z-[9999] p-4 bg-white rounded-xl shadow-2xl border border-gray-100 w-auto flex flex-col items-center">
+                                                    <div x-ref="pickerContainer"></div>
+                                                    <div
+                                                        class="mt-2 w-full text-center text-xs text-gray-400 uppercase font-bold">
+                                                        Seleccionar</div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                     <div>
@@ -315,6 +362,163 @@
                                         @endif
                                         <input type="file" name="bg_image" accept="image/*" @change="updatePreview"
                                             class="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-bold file:bg-blue-100 file:text-blue-700 hover:file:bg-blue-200" />
+                                    </div>
+                                </div>
+
+                                <!-- Extended Design Settings -->
+                                <div class="mt-6 bg-white p-4 rounded-xl border border-gray-300 shadow-sm space-y-4">
+                                    <h6 class="text-xs font-bold text-gray-500 uppercase flex items-center justify-between">
+                                        <span>Estilos de Texto (Opcional - Si no usa el Editor)</span>
+                                        <i class="fas fa-font text-gray-400"></i>
+                                    </h6>
+
+                                    <!-- Title Styling -->
+                                    <div class="grid grid-cols-2 gap-4 border-b border-gray-100 pb-4">
+                                        <div class="col-span-2 text-xs font-bold text-blue-600 uppercase">Título Principal
+                                        </div>
+                                        <div x-data="{ 
+                                                                    open: false,
+                                                                    color: '{{ old('title_color', isset($certificate) ? $certificate->getConfig('title_color') : '#000000') }}',
+                                                                    picker: null,
+                                                                    initPicker() {
+                                                                        if (this.picker) return;
+                                                                        this.picker = new iro.ColorPicker(this.$refs.pickerContainer, {
+                                                                            width: 160,
+                                                                            color: this.color,
+                                                                            padding: 0,
+                                                                            layout: [
+                                                                                { component: iro.ui.Wheel, options: {} },
+                                                                                { component: iro.ui.Slider, options: { sliderType: 'value' } }
+                                                                            ]
+                                                                        });
+                                                                        this.picker.on('color:change', (c) => {
+                                                                            this.color = c.hexString;
+                                                                            updatePreview();
+                                                                        });
+                                                                    }
+                                                                }" class="relative z-40">
+                                            <label class="block text-xs font-bold text-gray-700 mb-2">Color</label>
+                                            <input type="hidden" name="title_color" x-model="color">
+
+                                            <!-- Color Wheel Circle Trigger -->
+                                            <div class="relative group w-10 h-10 transition-transform hover:scale-105 cursor-pointer"
+                                                @click="open = !open; if(open) $nextTick(() => initPicker())"
+                                                @click.away="open = false">
+                                                <!-- Rainbow Border/Background -->
+                                                <div class="absolute inset-0 rounded-full shadow-md ring-2 ring-gray-100"
+                                                    style="background: conic-gradient(from 0deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);">
+                                                </div>
+
+                                                <!-- Current Color Inner Circle -->
+                                                <div class="absolute inset-1.5 rounded-full border-2 border-white shadow-inner"
+                                                    :style="'background-color: ' + color"></div>
+                                            </div>
+
+                                            <!-- Custom Popover -->
+                                            <div x-show="open" x-transition style="display: none;"
+                                                class="absolute top-12 left-0 z-[9999] p-4 bg-white rounded-xl shadow-2xl border border-gray-100 w-auto flex flex-col items-center">
+                                                <div x-ref="pickerContainer"></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Tamaño (px)</label>
+                                            <input type="number" name="title_size"
+                                                class="w-full text-xs rounded border-gray-300"
+                                                value="{{ old('title_size', isset($certificate) ? $certificate->getConfig('title_size') : 40) }}"
+                                                @input="updatePreview">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Margen
+                                                Superior</label>
+                                            <input type="number" name="title_margin"
+                                                class="w-full text-xs rounded border-gray-300"
+                                                value="{{ old('title_margin', isset($certificate) ? $certificate->getConfig('title_margin') : 40) }}"
+                                                @input="updatePreview">
+                                        </div>
+                                        <div class="col-span-2">
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Fuente</label>
+                                            <select name="title_font" class="w-full text-xs rounded border-gray-300"
+                                                @change="updatePreview">
+                                                <option value="'Arial', sans-serif" {{ (old('title_font', isset($certificate) ? $certificate->getConfig('title_font') : '') == "'Arial', sans-serif") ? 'selected' : '' }}>Arial</option>
+                                                <option value="'Georgia', serif" {{ (old('title_font', isset($certificate) ? $certificate->getConfig('title_font') : '') == "'Georgia', serif") ? 'selected' : '' }}>Georgia (Elegante)</option>
+                                                <option value="'Courier New', monospace" {{ (old('title_font', isset($certificate) ? $certificate->getConfig('title_font') : '') == "'Courier New', monospace") ? 'selected' : '' }}>Courier (Máquina)
+                                                </option>
+                                                <option value="'Verdana', sans-serif" {{ (old('title_font', isset($certificate) ? $certificate->getConfig('title_font') : '') == "'Verdana', sans-serif") ? 'selected' : '' }}>Verdana (Legible)
+                                                </option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Body Styling -->
+                                    <div class="grid grid-cols-2 gap-4 pt-2">
+                                        <div class="col-span-2 text-xs font-bold text-blue-600 uppercase">Cuerpo de Texto
+                                        </div>
+                                        <div x-data="{ 
+                                                                open: false,
+                                                                color: '{{ old('body_color', isset($certificate) ? $certificate->getConfig('body_color') : '#333333') }}',
+                                                                picker: null,
+                                                                initPicker() {
+                                                                    if (this.picker) return;
+                                                                    this.picker = new iro.ColorPicker(this.$refs.pickerContainer, {
+                                                                        width: 160,
+                                                                        color: this.color,
+                                                                        padding: 0,
+                                                                        layout: [
+                                                                            { component: iro.ui.Wheel, options: {} },
+                                                                            { component: iro.ui.Slider, options: { sliderType: 'value' } },
+                                                                        ]
+                                                                    });
+                                                                    this.picker.on('color:change', (c) => {
+                                                                        this.color = c.hexString;
+                                                                        updatePreview();
+                                                                    });
+                                                                }
+                                                            }" class="relative z-30">
+                                            <label class="block text-xs font-bold text-gray-700 mb-2">Color</label>
+                                            <input type="hidden" name="body_color" x-model="color">
+
+                                            <!-- Color Wheel Circle Trigger -->
+                                            <div class="relative group w-10 h-10 transition-transform hover:scale-105 cursor-pointer"
+                                                @click="open = !open; if(open) $nextTick(() => initPicker())"
+                                                @click.away="open = false">
+                                                <!-- Rainbow Border/Background -->
+                                                <div class="absolute inset-0 rounded-full shadow-md ring-2 ring-gray-100"
+                                                    style="background: conic-gradient(from 0deg, #ff0000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff, #ff0000);">
+                                                </div>
+
+                                                <!-- Current Color Inner Circle -->
+                                                <div class="absolute inset-1.5 rounded-full border-2 border-white shadow-inner"
+                                                    :style="'background-color: ' + color"></div>
+                                            </div>
+
+                                            <!-- Custom Popover -->
+                                            <div x-show="open" x-transition style="display: none;"
+                                                class="absolute bottom-full mb-2 left-0 z-[9999] p-4 bg-white rounded-xl shadow-2xl border border-gray-100 w-auto flex flex-col items-center">
+                                                <div x-ref="pickerContainer"></div>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Tamaño (px)</label>
+                                            <input type="number" name="body_size"
+                                                class="w-full text-xs rounded border-gray-300"
+                                                value="{{ old('body_size', isset($certificate) ? $certificate->getConfig('body_size') : 20) }}"
+                                                @input="updatePreview">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Margen
+                                                Estudiante</label>
+                                            <input type="number" name="student_margin"
+                                                class="w-full text-xs rounded border-gray-300"
+                                                value="{{ old('student_margin', isset($certificate) ? $certificate->getConfig('student_margin') : 20) }}"
+                                                @input="updatePreview">
+                                        </div>
+                                        <div>
+                                            <label class="block text-xs font-bold text-gray-700 mb-1">Margen Curso</label>
+                                            <input type="number" name="course_margin"
+                                                class="w-full text-xs rounded border-gray-300"
+                                                value="{{ old('course_margin', isset($certificate) ? $certificate->getConfig('course_margin') : 20) }}"
+                                                @input="updatePreview">
+                                        </div>
                                     </div>
                                 </div>
 
@@ -363,42 +567,44 @@
 
                             <!-- CONTENT TAB -->
                             <!-- CONTENT TAB -->
-                            <div x-show="activeTab === 'content'" style="display: none;" x-data="{
-                                                                    editorInitialized: false,
-                                                                    initEditor() {
-                                                                        if (this.editorInitialized) return;
-                                                                        if (typeof tinymce === 'undefined') return;
+                            <div x-show="activeTab === 'content'" style="display: none;"
+                                x-data="{
+                                                                                                                                editorInitialized: false,
+                                                                                                                                initEditor() {
+                                                                                                                                    if (this.editorInitialized) return;
+                                                                                                                                    if (typeof tinymce === 'undefined') return;
 
-                                                                        // Wait a tick for x-show to render the element visible
-                                                                        this.$nextTick(() => {
-                                                                            tinymce.init({
-                                                                                selector: '#certContent',
-                                                                                height: 500,
-                                                                                menubar: false,
-                                                                                plugins: 'link image code table lists',
-                                                                                toolbar: 'undo redo | formatselect | fontselect fontsizeselect | ' +
-                                                                                    'bold italic backcolor | alignleft aligncenter ' +
-                                                                                    'alignright alignjustify | bullist numlist outdent indent | ' +
-                                                                                    'removeformat | help',
-                                                                                content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
-                                                                                setup: (editor) => {
-                                                                                    editor.on('change keyup', function(e) {
-                                                                                        editor.save(); // Sync to textarea
-                                                                                        // Trigger native input event so Alpine's @input listener on the form fires updatePreview
-                                                                                        const event = new Event('input', { bubbles: true });
-                                                                                        document.getElementById('certContent').dispatchEvent(event);
-                                                                                    });
-                                                                                    this.editorInitialized = true;
-                                                                                }
-                                                                            });
-                                                                        });
-                                                                    },
-                                                                    insertVariable(variable) {
-                                                                        if (tinymce.get('certContent')) {
-                                                                            tinymce.get('certContent').insertContent(variable);
-                                                                        }
-                                                                    }
-                                                                 }" x-effect="if (activeTab === 'content') initEditor()">
+                                                                                                                                    // Wait a tick for x-show to render the element visible
+                                                                                                                                    this.$nextTick(() => {
+                                                                                                                                        tinymce.init({
+                                                                                                                                            selector: '#certContent',
+                                                                                                                                            height: 500,
+                                                                                                                                            menubar: false,
+                                                                                                                                            plugins: 'link image code table lists',
+                                                                                                                                            toolbar: 'undo redo | formatselect | fontselect fontsizeselect | ' +
+                                                                                                                                                'bold italic backcolor | alignleft aligncenter ' +
+                                                                                                                                                'alignright alignjustify | bullist numlist outdent indent | ' +
+                                                                                                                                                'removeformat | help',
+                                                                                                                                            content_style: 'body { font-family:Helvetica,Arial,sans-serif; font-size:14px }',
+                                                                                                                                            setup: (editor) => {
+                                                                                                                                                editor.on('change keyup', function(e) {
+                                                                                                                                                    editor.save(); // Sync to textarea
+                                                                                                                                                    // Trigger native input event so Alpine's @input listener on the form fires updatePreview
+                                                                                                                                                    const event = new Event('input', { bubbles: true });
+                                                                                                                                                    document.getElementById('certContent').dispatchEvent(event);
+                                                                                                                                                });
+                                                                                                                                                this.editorInitialized = true;
+                                                                                                                                            }
+                                                                                                                                        });
+                                                                                                                                    });
+                                                                                                                                },
+                                                                                                                                insertVariable(variable) {
+                                                                                                                                    if (tinymce.get('certContent')) {
+                                                                                                                                        tinymce.get('certContent').insertContent(variable);
+                                                                                                                                    }
+                                                                                                                                }
+                                                                                                                             }"
+                                x-effect="if (activeTab === 'content') initEditor()">
 
                                 <div class="space-y-4">
                                     <!-- Variables Help Block -->
@@ -433,26 +639,26 @@
                                             Certificado</label>
                                         <textarea id="certContent" name="content_html" rows="20"
                                             class="w-full rounded-lg border border-gray-300">
-                                                            @php
-                                                                $savedContent = old('content_html');
-                                                                if (!$savedContent && isset($certificate)) {
-                                                                    $savedContent = data_get($certificate, 'configuracion.content_html');
-                                                                }
-                                                            @endphp
+                                                                                                                        @php
+                                                                                                                            $savedContent = old('content_html');
+                                                                                                                            if (!$savedContent && isset($certificate)) {
+                                                                                                                                $savedContent = data_get($certificate, 'configuracion.content_html');
+                                                                                                                            }
+                                                                                                                        @endphp
 
-                                                            @if($savedContent)
-                                                                {!! $savedContent !!}
-                                                            @else
-                                                                <div style="text-align: center;">
-                                                                    <h1 style="color: #333333; font-size: 40px; margin-bottom: 20px;">CERTIFICADO DE APROBACIÓN</h1>
-                                                                    <p style="color: #666666; font-size: 20px; margin-bottom: 5px;">Se otorga a:</p>
-                                                                    <p style="color: #000000; font-size: 30px; font-weight: bold; margin-bottom: 20px;">{nombre_participante}</p>
-                                                                    <p style="color: #666666; font-size: 20px; margin-bottom: 5px;">Por aprobar el curso:</p>
-                                                                    <p style="color: #000000; font-size: 25px; font-weight: bold; margin-bottom: 20px;">{nombre_curso}</p>
-                                                                    <p style="color: #666666; font-size: 16px;">Fecha: {fecha_termino}</p>
-                                                                </div>
-                                                            @endif
-                                                                        </textarea>
+                                                                                                                        @if($savedContent)
+                                                                                                                            {!! $savedContent !!}
+                                                                                                                        @else
+                                                                                                                            <div style="text-align: center;">
+                                                                                                                                <h1 style="color: #333333; font-size: 40px; margin-bottom: 20px;">CERTIFICADO DE APROBACIÓN</h1>
+                                                                                                                                <p style="color: #666666; font-size: 20px; margin-bottom: 5px;">Se otorga a:</p>
+                                                                                                                                <p style="color: #000000; font-size: 30px; font-weight: bold; margin-bottom: 20px;">{nombre_participante}</p>
+                                                                                                                                <p style="color: #666666; font-size: 20px; margin-bottom: 5px;">Por aprobar el curso:</p>
+                                                                                                                                <p style="color: #000000; font-size: 25px; font-weight: bold; margin-bottom: 20px;">{nombre_curso}</p>
+                                                                                                                                <p style="color: #666666; font-size: 16px;">Fecha: {fecha_termino}</p>
+                                                                                                                            </div>
+                                                                                                                        @endif
+                                                                                                                                    </textarea>
                                     </div>
                                 </div>
 
@@ -488,14 +694,14 @@
 
                         <div class="bg-gray-100 px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
                             <button type="button" @click.prevent="
-                                                                if (typeof tinymce !== 'undefined' && tinymce.get('certContent')) { tinymce.get('certContent').save(); }
-                                                                $dispatch('confirm-action', { 
-                                                                title: 'Guardar Plantilla', 
-                                                                message: '¿Confirma que desea guardar los cambios en esta plantilla?', 
-                                                                type: 'enable',
-                                                                formId: 'certForm',
-                                                                confirmText: 'Sí, Guardar' 
-                                                            })"
+                                                                                                                            if (typeof tinymce !== 'undefined' && tinymce.get('certContent')) { tinymce.get('certContent').save(); }
+                                                                                                                            $dispatch('confirm-action', { 
+                                                                                                                            title: 'Guardar Plantilla', 
+                                                                                                                            message: '¿Confirma que desea guardar los cambios en esta plantilla?', 
+                                                                                                                            type: 'enable',
+                                                                                                                            formId: 'certForm',
+                                                                                                                            confirmText: 'Sí, Guardar' 
+                                                                                                                        })"
                                 class="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold rounded-xl shadow-lg transform hover:-translate-y-0.5 transition-all flex items-center">
                                 <i class="fas fa-save mr-2"></i> GUARDAR CAMBIOS
                             </button>

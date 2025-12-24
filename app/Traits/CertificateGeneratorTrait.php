@@ -115,22 +115,30 @@ trait CertificateGeneratorTrait
                 padding: 40px;
                 text-align: center;
                 {$bgCss}
+                
+                /* Vertical Centering Fix */
+                display: flex;
+                flex-direction: column;
+                justify-content: center; /* Centers vertically */
+                align-items: center;     /* Centers horizontally */
             }
-            /* Legacy Classes Support */
-            .cert-title {
-                color: {$params['title_color']};
-                font-size: {$params['title_size']}px;
-                font-family: {$params['title_font']};
-                text-align: {$params['title_align']};
-                margin-top: {$params['title_margin']}px;
-                margin-bottom: 20px;
-                font-weight: bold;
+            /* Legacy Classes Support + Generic Tags */
+            .cert-title, h1 {
+                color: {$params['title_color']} !important;
+                font-size: {$params['title_size']}px !important;
+                font-family: {$params['title_font']} !important;
+                text-align: {$params['title_align']} !important;
+                margin-top: {$params['title_margin']}px !important;
+                margin-bottom: 20px !important;
+                font-weight: bold !important;
+                line-height: 1.2 !important;
             }
-            .cert-body {
-                color: {$params['body_color']};
-                font-size: {$params['body_size']}px;
-                font-family: {$params['body_font']};
-                margin-bottom: 10px;
+            .cert-body, p, div {
+                color: {$params['body_color']} !important;
+                font-size: {$params['body_size']}px !important;
+                font-family: {$params['body_font']} !important;
+                margin-bottom: 10px !important;
+                line-height: 1.5 !important;
             }
             .cert-student {
                 font-size: " . ($params['body_size'] * 1.5) . "px;
