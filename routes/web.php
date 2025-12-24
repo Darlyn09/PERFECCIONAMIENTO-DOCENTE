@@ -198,6 +198,7 @@ Route::prefix('portal')->name('participant.')->group(function () {
             Route::get('/curso-docente/{id}/alumnos', [App\Http\Controllers\Participant\RelatorController::class, 'students'])->name('course_students');
             Route::get('/programa-docente/{id}/calificaciones', [App\Http\Controllers\Participant\RelatorController::class, 'grades'])->name('program_grades');
             Route::post('/programa-docente/{id}/calificaciones', [App\Http\Controllers\Participant\RelatorController::class, 'updateGrades'])->name('update_grades');
+            Route::get('/programa-docente/{id}/certificado', [App\Http\Controllers\Participant\RelatorController::class, 'downloadCertificate'])->name('certificate');
             Route::post('/aprobacion/{id}', [App\Http\Controllers\Participant\RelatorController::class, 'toggleApproval'])->name('toggle_approval');
         });
     });

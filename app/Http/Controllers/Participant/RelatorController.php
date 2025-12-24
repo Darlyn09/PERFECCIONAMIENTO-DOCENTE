@@ -272,4 +272,86 @@ class RelatorController extends Controller
 
         return back()->with('success', 'Calificaciones actualizadas correctamente.');
     }
+    use \App\Traits\CertificateGeneratorTrait;
+
+    /**
+     * Descarga el certificado de participación como docente para un programa (sesión) específico.
+     */
+    public function downloadCertificate($programId)
+    {
+        $participant = Auth::guard('participant')->user();
+
+        if (!$participant || !$participant->relator) {
+            abort(403, 'Acceso denegado.');
+        }
+
+        $relator = $participant->relator;
+
+        // 1. Fetch Program and Verify Pivot
+        $programa = \App\Models\Programa::with(['curso', 'relatores'])->findOrFail($programId);
+
+        // Check if relator is assigned via pivot
+        $pivot = $programa->relatores()->where('relator.rel_id', $relator->rel_id)->first();
+
+        if (!$pivot) {
+            abort(403, 'Usted no está asignado a esta sesión/programa.');
+        }
+
+        // 2. Check configuration
+        $cert = \App\Models\Certificado::where('tipo', 'curso')
+            ->where('referencia_id', $programa->pro_cur_id)
+            ->first();
+
+        if (!$cert) {
+            $cert = \App\Models\Certificado::where('tipo', 'defecto')->latest()->first();
+        }
+
+        // 3. Data Setup
+        $data = $cert;
+        if (!$cert) {
+            $data = [
+                'width' => 800,
+                'height' => 600,
+                'settings' => ['title_text' => 'CERTIFICADO DOCENTE', 'body_text' => 'Se certifica que:']
+            ];
+        }
+
+        // 4. Verification URL
+        // $verificationUrl = config('app.url') . "/certificates/verify/docente/" . $programa->pro_id; // Mock
+        $verificationUrl = route('certificates.verify', ['user' => 'docente', 'course' => $programa->pro_id]); // Use verify route but params might need logic
+
+        if (is_object($data)) {
+            $certArray = $data->toArray();
+            $certArray['verification_url'] = $verificationUrl;
+            $data = $certArray;
+        } else {
+            $data['verification_url'] = $verificationUrl;
+        }
+
+        // 5. Generate
+        $generated = $this->generateHtmlCss($data);
+
+        // 6. Replacements
+        $replacements = [
+            '{nombre_participante}' => mb_strtoupper($relator->rel_nombres . ' ' . $relator->rel_apellidos),
+            '{rut_participante}' => $relator->rel_rut,
+            '{nombre_curso}' => mb_strtoupper($programa->curso->cur_nombre),
+            '{fecha_inicio}' => $programa->pro_fecha_inicio,
+            '{fecha_termino}' => $programa->pro_fecha_termino,
+            '{horas_curso}' => $programa->curso->cur_horas,
+            '{nombre_relator}' => '', // Self
+            // Compat
+            '{alumno}' => mb_strtoupper($relator->rel_nombres . ' ' . $relator->rel_apellidos),
+            '{curso}' => mb_strtoupper($programa->curso->cur_nombre),
+            '{fecha}' => now()->format('d/m/Y'),
+            '{nombre}' => mb_strtoupper($relator->rel_nombres . ' ' . $relator->rel_apellidos),
+        ];
+
+        $html = $this->applyReplacements($generated['html'], $replacements);
+
+        $pdf = \PDF::loadHTML($html);
+        $pdf->setPaper([0, 0, $generated['css']['width'] ?? 800, $generated['css']['height'] ?? 600]);
+
+        return $pdf->download('Certificado_Relator_' . $programId . '.pdf');
+    }
 }
