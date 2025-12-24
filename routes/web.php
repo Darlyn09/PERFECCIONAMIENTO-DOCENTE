@@ -73,7 +73,7 @@ Route::middleware(['auth'])->prefix('admin')->name('admin.')->group(function () 
     Route::get('/programs/{id}/relator-grades', [ProgramController::class, 'relatorGrades'])->name('programs.relator_grades');
     Route::post('/programs/{id}/update-relator-grades', [ProgramController::class, 'updateRelatorGrades'])->name('programs.update_relator_grades');
     Route::post('/programs/{id}/certify-teacher/{relLogin}', [ProgramController::class, 'certifyTeacher'])->name('programs.certify_teacher');
-    Route::get('/programs/{id}/relator-certificate/{relLogin}', [\App\Http\Controllers\Admin\CertificateController::class, 'downloadRelatorCertificate'])->name('relators.certificate');
+    Route::get('/programs/{id}/relator-certificate/{relLogin}', [CertificateController::class, 'downloadRelatorCertificate'])->name('relators.certificate');
 
 
     // Rutas Relatores (Teachers - Legacy)
