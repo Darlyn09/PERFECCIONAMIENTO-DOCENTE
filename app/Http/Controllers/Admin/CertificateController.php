@@ -71,6 +71,20 @@ class CertificateController extends Controller
             'orientation' => $request->orientation ?? 'landscape'
         ];
 
+        // Handle Images Base64 for preview
+        if ($request->hasFile('bg_image')) {
+            $file = $request->file('bg_image');
+            $type = $file->getMimeType();
+            $content = base64_encode(file_get_contents($file->getRealPath()));
+            $certData['bg_image_url'] = "data:$type;base64,$content";
+        }
+        if ($request->hasFile('signature_image')) {
+            $file = $request->file('signature_image');
+            $type = $file->getMimeType();
+            $content = base64_encode(file_get_contents($file->getRealPath()));
+            $certData['signature_url'] = "data:$type;base64,$content";
+        }
+
         // Mock generic data for replacement
         $replacements = [
             '{nombre_participante}' => 'JUAN PÉREZ GONZÁLEZ',
@@ -488,12 +502,10 @@ class CertificateController extends Controller
 
             $html = $this->applyReplacements($generated['html'], $replacements);
 
-            return view('admin.certificates.preview', [
-                'width' => $data['width'] ?? 800,
-                'height' => $data['height'] ?? 600,
-                'html' => $html,
-                'css' => $generated['css']
-            ]);
+            $pdf = \PDF::loadHTML($html);
+            $pdf->setPaper([0, 0, $generated['css']['width'] ?? 800, $generated['css']['height'] ?? 600]);
+
+            return $pdf->download('Certificado.pdf');
 
         } catch (\Exception $e) {
             return back()->with('error', 'Error generando certificado: ' . $e->getMessage());
