@@ -30,23 +30,24 @@ class CertificateVerificationController extends Controller
         $isApproved = false;
         $completionDate = null;
 
-        if ($inscripcion && $inscripcion->informacion && $inscripcion->informacion->inf_estado == 1) {
+        if ($inscripcion && $inscripcion->isApproved()) {
             $isApproved = true;
-            $completionDate = $course->cur_fecha_termino;
+            $completionDate = $inscripcion->curso->cur_fecha_termino; // O fecha certificado
         }
 
         if (!$isApproved) {
-            return view('certificates.verify', [
+            return view('certificates.validate', [
                 'isValid' => false,
                 'message' => 'El certificado no es válido. El participante no ha aprobado este curso.'
             ]);
         }
 
-        return view('certificates.verify', [
+        return view('certificates.validate', [
             'isValid' => true,
-            'user' => $participant, // Pass participant as user for view compatibility
+            'participant' => $participant,
             'course' => $course,
-            'date' => $completionDate
+            'date' => $completionDate,
+            'validationCode' => 'VERIFICADO-LINK' // Indicador de que es por link
         ]);
     }
 
@@ -78,10 +79,7 @@ class CertificateVerificationController extends Controller
         }
 
         // 3. Verificar estado de aprobación
-        $isApproved = false;
-        if ($inscripcion->informacion && $inscripcion->informacion->inf_estado == 1) {
-            $isApproved = true;
-        }
+        $isApproved = $inscripcion->isApproved();
 
         if (!$isApproved) {
             return view('certificates.validate', [

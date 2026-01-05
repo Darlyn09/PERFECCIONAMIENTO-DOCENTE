@@ -24,7 +24,7 @@ trait CertificateGeneratorTrait
     protected function generateHtmlCss($data, $isPreview = false)
     {
         // Adapt $data (Model or Array) to params
-        $settings = is_array($data) ? ($data['settings'] ?? []) : ($data->configuracion ?? []);
+        $settings = is_array($data) ? ($data['settings'] ?? $data['configuracion'] ?? []) : ($data->configuracion ?? []);
         $width = is_array($data) ? ($data['width'] ?? 800) : $data->width;
         $height = is_array($data) ? ($data['height'] ?? 600) : $data->height;
         $signatureUrl = is_array($data) ? ($data['signature_url'] ?? null) : $data->firma_imagen;
@@ -95,33 +95,48 @@ trait CertificateGeneratorTrait
 
         $css = "
             @page {
+                margin: 0px;
                 size: {$width}px {$height}px;
-                margin: 0;
             }
-            body {
-                margin: 0;
-                padding: 0;
-                font-family: 'Arial', sans-serif;
-                width: {$width}px;
-                height: {$height}px;
-            }
-            .cert-container {
+            html, body {
+                margin: 0px;
+                padding: 0px;
                 width: 100%;
                 height: 100%;
+            }
+            .cert-container {
+                position: absolute;
+                top: 0;
+                left: 0;
+                width: 100%;
+                height: 100%;
+                
+                /* Border handling: If we use border on this, it might add to width if box-sizing fails. 
+                   Safest is to put border on an inner div or trust box-sizing with a slightly smaller width if needed.
+                   Let's keep box-sizing but monitor it. */
                 box-sizing: border-box;
-                position: relative;
-                overflow: hidden;
                 border: {$params['border_width']}px solid {$params['border_color']};
-                padding: 40px;
-                text-align: center;
+                
+                /* Background */
                 {$bgCss}
                 
-                /* Vertical Centering Fix */
-                display: flex;
-                flex-direction: column;
-                justify-content: center; /* Centers vertically */
-                align-items: center;     /* Centers horizontally */
+                /* Layout */
+                overflow: hidden;
             }
+            
+            /* Vertical Centering Helper using Table method (Robust in DomPDF) */
+            .cert-content-wrapper {
+                display: table;
+                width: 100%;
+                height: 100%;
+            }
+            .cert-content-cell {
+                display: table-cell;
+                vertical-align: middle;
+                text-align: center;
+                padding: 40px; /* Padding moved inside */
+            }
+
             /* Legacy Classes Support + Generic Tags */
             .cert-title, h1 {
                 color: {$params['title_color']} !important;
@@ -182,8 +197,12 @@ trait CertificateGeneratorTrait
 
         $html = "
             <div class='cert-container'>
-                {$mainContent}
-                <div class='cert-signature'>{$sigHtml}</div>
+                <div class='cert-content-wrapper'>
+                    <div class='cert-content-cell'>
+                        {$mainContent}
+                        <div class='cert-signature'>{$sigHtml}</div>
+                    </div>
+                </div>
                 {$qrHtml}
             </div>
         ";

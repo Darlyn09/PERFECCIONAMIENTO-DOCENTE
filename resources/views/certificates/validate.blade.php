@@ -4,148 +4,117 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Validación de Certificado - System</title>
+    <title>Validación de Certificado - CFRD UDEC</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #f3f4f6;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            padding: 20px;
+            font-family: 'Inter', sans-serif;
         }
 
-        .validation-card {
-            background: white;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            max-width: 500px;
-            width: 100%;
-            text-align: center;
-            border-top: 6px solid #10b981;
-            /* Green for success default */
-        }
-
-        .validation-card.invalid {
-            border-top-color: #ef4444;
-            /* Red for invalid */
-        }
-
-        .icon-container {
-            font-size: 60px;
-            margin-bottom: 20px;
-        }
-
-        .success-icon {
-            color: #10b981;
-        }
-
-        .error-icon {
-            color: #ef4444;
-        }
-
-        h1 {
-            color: #1f2937;
-            margin-bottom: 10px;
-            font-size: 24px;
-        }
-
-        h2 {
-            color: #4b5563;
-            font-size: 18px;
-            margin-top: 5px;
-            font-weight: normal;
-        }
-
-        .detail-row {
-            margin-top: 30px;
-            text-align: left;
-            border-bottom: 1px solid #e5e7eb;
-            padding-bottom: 12px;
-            margin-bottom: 12px;
-        }
-
-        .detail-label {
-            display: block;
-            font-size: 12px;
-            text-transform: uppercase;
-            color: #6b7280;
-            margin-bottom: 4px;
-            letter-spacing: 0.5px;
-        }
-
-        .detail-value {
-            font-size: 16px;
-            font-weight: 600;
-            color: #111827;
-        }
-
-        .footer {
-            margin-top: 30px;
-            font-size: 12px;
-            color: #9ca3af;
-        }
-
-        .verification-code {
-            background: #f9fafb;
-            padding: 8px;
-            border-radius: 6px;
-            font-family: monospace;
-            color: #6b7280;
-            font-size: 14px;
-            margin-top: 20px;
-            display: inline-block;
+        .bg-pattern {
+            background-image: url('data:image/svg+xml,%3Csvg width="60" height="60" viewBox="0 0 60 60" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="none" fill-rule="evenodd"%3E%3Cg fill="%239C92AC" fill-opacity="0.05"%3E%3Cpath d="M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z"/%3E%3C/g%3E%3C/g%3E%3C/svg%3E');
         }
     </style>
 </head>
 
-<body>
+<body class="bg-slate-50 min-h-screen flex flex-col items-center justify-center p-4 bg-pattern">
 
-    @if($isValid)
-        <div class="validation-card">
-            <div class="icon-container success-icon">✓</div>
-            <h1>Certificado Válido</h1>
-            <h2>Este documento es auténtico.</h2>
+    <div class="max-w-xl w-full bg-white rounded-3xl shadow-2xl overflow-hidden border border-slate-100">
 
-            <div class="detail-row">
-                <span class="detail-label">Participante</span>
-                <span class="detail-value">{{ $participant->par_nombre }} {{ $participant->par_apellido }}</span>
+        {{-- Header Status --}}
+        <div class="{{ $isValid ? 'bg-emerald-600' : 'bg-red-600' }} p-8 text-center relative overflow-hidden">
+            <div class="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]">
             </div>
 
-            <div class="detail-row">
-                <span class="detail-label">Curso Aprobado</span>
-                <span class="detail-value">{{ $course->cur_nombre }}</span>
-            </div>
-
-            <div class="detail-row">
-                <span class="detail-label">Fecha de Finalización</span>
-                <span class="detail-value">
-                    {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}
-                </span>
-            </div>
-
-            <div class="verification-code">
-                Ref: {{ $validationCode }}
-            </div>
-
-            <div class="footer">
-                Sistema de Validación de Certificados
+            <div class="relative z-10">
+                <div
+                    class="mx-auto bg-white rounded-full w-24 h-24 flex items-center justify-center mb-4 shadow-lg transform transition-transform hover:scale-105 duration-300">
+                    <i
+                        class="fas {{ $isValid ? 'fa-check-circle text-emerald-600' : 'fa-times-circle text-red-600' }} text-5xl"></i>
+                </div>
+                <h1 class="text-3xl font-bold text-white mb-2 tracking-tight">
+                    {{ $isValid ? 'Certificado Auténtico' : 'Documento No Válido' }}
+                </h1>
+                <p
+                    class="{{ $isValid ? 'text-emerald-100' : 'text-red-100' }} font-medium text-sm uppercase tracking-wider">
+                    {{ $isValid ? 'Verificado Oficialmente' : 'Error de Validación' }}
+                </p>
             </div>
         </div>
-    @else
-        <div class="validation-card invalid">
-            <div class="icon-container error-icon">✕</div>
-            <h1>Certificado Inválido</h1>
-            <h2>{{ $message ?? 'No se ha podido verificar la autenticidad del documento.' }}</h2>
 
-            <div class="footer">
-                Si cree que esto es un error, contacte a la administración.
-            </div>
+        {{-- Content --}}
+        <div class="p-8 sm:p-10 space-y-8">
+            @if($isValid)
+                <div class="text-center space-y-2">
+                    <p class="text-xs text-slate-400 uppercase font-bold tracking-widest">Certificado Otorgado a</p>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-slate-800 leading-tight">
+                        {{ mb_strtoupper($participant->par_nombre . ' ' . ($participant->par_apellidos ?? $participant->par_apellido)) }}
+                    </h2>
+                    <p class="text-slate-500 font-mono text-sm">{{ $participant->par_rut ?? $participant->par_login }}</p>
+                </div>
+
+                <div class="relative py-6">
+                    <div class="absolute inset-0 flex items-center">
+                        <div class="w-full border-t border-slate-100"></div>
+                    </div>
+                </div>
+
+                <div class="space-y-6">
+                    <div
+                        class="flex flex-col items-center justify-center text-center p-6 bg-slate-50 rounded-2xl border border-slate-100 hover:border-blue-200 transition-colors group">
+                        <div
+                            class="mb-3 p-3 bg-blue-100 rounded-full group-hover:bg-blue-600 transition-colors duration-300">
+                            <i
+                                class="fas fa-graduation-cap text-blue-600 group-hover:text-white text-xl transition-colors"></i>
+                        </div>
+                        <p class="text-xs text-slate-400 uppercase font-bold tracking-wide mb-1">Curso Aprobado</p>
+                        <h3 class="text-lg font-bold text-blue-900 leading-snug">
+                            {{ $course->cur_nombre }}
+                        </h3>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="text-center p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <p class="text-[10px] text-slate-400 uppercase font-bold mb-1">Fecha Finalización</p>
+                            <p class="text-slate-700 font-bold">
+                                {{ \Carbon\Carbon::parse($date)->format('d/m/Y') }}
+                            </p>
+                        </div>
+                        <div class="text-center p-4 bg-slate-50 rounded-xl border border-slate-100">
+                            <p class="text-[10px] text-slate-400 uppercase font-bold mb-1">Código Validación</p>
+                            <p class="text-slate-700 font-mono font-bold text-sm truncate"
+                                title="{{ $validationCode ?? 'N/A' }}">
+                                {{ $validationCode ?? 'N/A' }}
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-6 text-center">
+                    <img src="https://cfrd.cl/wp-content/uploads/2020/07/Logo-CFRD-Alta.png" alt="Logo Institucional"
+                        class="h-12 mx-auto opacity-80 hover:opacity-100 transition-opacity">
+                </div>
+            @else
+                <div class="text-center space-y-4">
+                    <p class="text-slate-600 leading-relaxed">
+                        {{ $message ?? 'El código proporcionado no corresponde a un certificado emitido válido o el participante no cumple los requisitos.' }}
+                    </p>
+                    <div class="p-4 bg-red-50 text-red-700 text-sm rounded-xl border border-red-100">
+                        Si considera que esto es un error, por favor contacte a la administración académica.
+                    </div>
+                </div>
+            @endif
         </div>
-    @endif
+
+        {{-- Footer --}}
+        <div class="bg-slate-50 p-4 text-center border-t border-slate-100">
+            <p class="text-xs text-slate-400 font-medium">
+                &copy; {{ date('Y') }} Sistema de Gestión Académica.
+            </p>
+        </div>
+    </div>
 
 </body>
 

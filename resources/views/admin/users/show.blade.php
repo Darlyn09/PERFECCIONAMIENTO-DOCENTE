@@ -221,6 +221,11 @@
                                         @php
                                             $fechaTermino = $ins->cur_fecha_termino ?? $ins->eve_finaliza;
                                             $finalizado = $fechaTermino && \Carbon\Carbon::parse($fechaTermino)->isPast();
+                                            
+                                            $nota = str_replace(',', '.', $ins->inf_nota); // Usar inf_nota
+                                            $tieneNota = is_numeric($nota);
+                                            // Aprobado usando lógica centralizada
+                                            $aprobado = $ins->isApproved();
                                         @endphp
                                         <tr class="hover:bg-blue-50/30 transition-colors group">
                                             <td class="px-6 py-4">
@@ -235,9 +240,17 @@
                                                 {{ $ins->cur_fecha_inicio ? \Carbon\Carbon::parse($ins->cur_fecha_inicio)->format('d/m/Y') : '-' }}
                                             </td>
                                             <td class="px-6 py-4 text-center">
-                                                @if($finalizado)
-                                                    <span class="inline-flex items-center px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold">
+                                                @if($aprobado)
+                                                    <span class="inline-flex items-center px-2.5 py-1 bg-emerald-100 text-emerald-700 rounded-lg text-xs font-bold" title="Nota: {{ $ins->inf_nota }}">
                                                         <i class="fa fa-check mr-1.5"></i> Aprobado
+                                                    </span>
+                                                @elseif($finalizado && $tieneNota)
+                                                    <span class="inline-flex items-center px-2.5 py-1 bg-red-100 text-red-700 rounded-lg text-xs font-bold" title="Nota: {{ $ins->inf_nota }}">
+                                                        <i class="fa fa-times mr-1.5"></i> Reprobado
+                                                    </span>
+                                                @elseif($finalizado)
+                                                    <span class="inline-flex items-center px-2.5 py-1 bg-slate-100 text-slate-600 rounded-lg text-xs font-bold">
+                                                        <i class="fa fa-clock mr-1.5"></i> Finalizado
                                                     </span>
                                                 @else
                                                     <span class="inline-flex items-center px-2.5 py-1 bg-blue-100 text-blue-700 rounded-lg text-xs font-bold">
@@ -246,7 +259,7 @@
                                                 @endif
                                             </td>
                                             <td class="px-6 py-4 text-center">
-                                                @if($finalizado)
+                                                @if($aprobado)
                                                     <a href="{{ route('admin.certificates.download', ['login' => $usuario->par_login, 'course' => $ins->cur_id]) }}" 
                                                        class="inline-flex items-center justify-center w-8 h-8 bg-amber-100 text-amber-600 rounded-lg hover:bg-amber-500 hover:text-white transition-all shadow-sm transform hover:scale-110" 
                                                        title="Descargar Certificado"
@@ -254,7 +267,7 @@
                                                         <i class="fa fa-file-download"></i>
                                                     </a>
                                                 @else
-                                                    <span class="text-slate-300 cursor-not-allowed" title="No disponible">
+                                                    <span class="text-slate-300 cursor-not-allowed" title="Requiere aprobación">
                                                         <i class="fa fa-lock"></i>
                                                     </span>
                                                 @endif

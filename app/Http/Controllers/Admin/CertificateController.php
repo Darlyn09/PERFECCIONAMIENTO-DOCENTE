@@ -200,6 +200,14 @@ class CertificateController extends Controller
             'body_text' => 'nullable|string',
             'body_color' => 'nullable|string',
             'body_size' => 'nullable|integer',
+        ], [
+            'name.required' => 'El nombre de la plantilla es obligatorio.',
+            'referencia_id.required_if' => 'Debe seleccionar un curso o evento para este tipo de certificado.',
+            'referencia_id.unique' => 'Ya existe un certificado para este curso/evento.',
+            'bg_image.image' => 'El archivo de fondo debe ser una imagen.',
+            'bg_image.max' => 'La imagen de fondo no debe pesar más de 4MB.',
+            'signature_image.image' => 'El archivo de firma debe ser una imagen.',
+            'signature_image.max' => 'La imagen de firma no debe pesar más de 2MB.',
         ]);
 
         // Si es tipo 'curso' o 'evento', verificar si ya existe (opcional, para evitar múltiples certs para el mismo curso)
@@ -301,7 +309,7 @@ class CertificateController extends Controller
     public function edit(Request $request, $id)
     {
         $certificate = Certificado::findOrFail($id);
-        $courses = Curso::orderBy('cur_nombre')->get(['cur_id', 'cur_nombre']);
+        $courses = Curso::orderBy('cur_nombre')->pluck('cur_nombre', 'cur_id');
 
         $mode = $request->input('mode') ?? $request->query('mode');
         $layout = $mode === 'modal' ? 'layouts.plain' : 'layouts.admin';
@@ -331,6 +339,13 @@ class CertificateController extends Controller
             'body_text' => 'nullable|string',
             'body_color' => 'nullable|string',
             'body_size' => 'nullable|integer',
+        ], [
+            'name.required' => 'El nombre de la plantilla es obligatorio.',
+            'referencia_id.required_if' => 'Debe seleccionar un curso o evento para este tipo de certificado.',
+            'bg_image.image' => 'El archivo de fondo debe ser una imagen.',
+            'bg_image.max' => 'La imagen de fondo no debe pesar más de 4MB.',
+            'signature_image.image' => 'El archivo de firma debe ser una imagen.',
+            'signature_image.max' => 'La imagen de firma no debe pesar más de 2MB.',
         ]);
 
         // Logic similar to store but updating
@@ -440,7 +455,12 @@ class CertificateController extends Controller
     {
         $usuario = Participante::where('par_login', $login)->firstOrFail();
         $curso = Curso::with(['programas.relatores'])->findOrFail($courseId);
-        $inscripcion = Inscripcion::where('par_login', $login)->where('cur_id', $courseId)->first();
+        $inscripcion = Inscripcion::where('par_login', $login)->where('cur_id', $courseId)->firstOrFail();
+
+        // 0. Validar aprobación
+        if (!$inscripcion->isApproved()) {
+            return back()->with('error', 'El participante no cumple con los requisitos de aprobación para descargar este certificado.');
+        }
 
         // 1. Buscar Certificado Específico del Curso
         $cert = Certificado::where('tipo', 'curso')->where('referencia_id', $courseId)->first();
@@ -461,6 +481,7 @@ class CertificateController extends Controller
                 'settings' => [
                     'title_text' => 'CERTIFICADO DE APROBACIÓN',
                     'body_text' => 'Se otorga a:',
+                    'show_qr' => true,
                 ]
             ];
         }
@@ -475,14 +496,32 @@ class CertificateController extends Controller
             $verificationUrl = $publicBaseUrl . "/certificates/validate/" . $inscripcion->ins_id . "/" . $hash;
         }
 
-        // Inject verification URL
-        if (is_object($data) && $data instanceof Certificado) {
-            $certArray = $data->toArray();
-            $certArray['verification_url'] = $verificationUrl;
-            $data = $certArray;
-        } else {
-            $data['verification_url'] = $verificationUrl;
+        // Prepare Data for PDF and fix Image Paths
+        $certDataForPdf = is_object($data) ? $data->toArray() : $data;
+
+        // Fix Background Image Path
+        if (isset($certDataForPdf['imagen_fondo']) && $certDataForPdf['imagen_fondo']) {
+            if (Str::startsWith($certDataForPdf['imagen_fondo'], '/storage')) {
+                // Convert /storage/path/to/img.jpg -> C:\...\public\storage\path\to\img.jpg
+                $certDataForPdf['bg_image_url'] = public_path($certDataForPdf['imagen_fondo']);
+            } else {
+                $certDataForPdf['bg_image_url'] = $certDataForPdf['imagen_fondo'];
+            }
         }
+
+        // Fix Signature Image Path
+        if (isset($certDataForPdf['firma_imagen']) && $certDataForPdf['firma_imagen']) {
+            if (Str::startsWith($certDataForPdf['firma_imagen'], '/storage')) {
+                $certDataForPdf['signature_url'] = public_path($certDataForPdf['firma_imagen']);
+            } else {
+                $certDataForPdf['signature_url'] = $certDataForPdf['firma_imagen'];
+            }
+        }
+
+        // Inject verification URL
+        $certDataForPdf['verification_url'] = $verificationUrl;
+
+        $data = $certDataForPdf;
 
         try {
             $generated = $this->generateHtmlCss($data);
@@ -521,7 +560,7 @@ class CertificateController extends Controller
                     : ($curso->cur_fecha_termino ? \Carbon\Carbon::parse($curso->cur_fecha_termino)->format('d/m/Y') : now()->format('d/m/Y')),
                 '{fecha_inicio}' => $curso->cur_fecha_inicio ? \Carbon\Carbon::parse($curso->cur_fecha_inicio)->format('d/m/Y') : '',
                 '{horas_curso}' => $curso->cur_horas ?? '',
-                '{nota}' => ($inscripcion && $inscripcion->informacion) ? $inscripcion->informacion->inf_nota_final : '',
+                '{nota}' => ($inscripcion && $inscripcion->informacion) ? $inscripcion->informacion->inf_nota : '',
                 '{nombre_relator}' => $relatorName, // Added for Req
                 // Compat keys
                 '{alumno}' => mb_strtoupper($usuario->par_nombre . ' ' . $usuario->par_apellidos),
@@ -533,9 +572,41 @@ class CertificateController extends Controller
             ];
 
             $html = $this->applyReplacements($generated['html'], $replacements);
+            $css = $generated['css'];
 
-            $pdf = Pdf::loadHTML($html);
-            $pdf->setPaper([0, 0, $generated['css']['width'] ?? 800, $generated['css']['height'] ?? 600]);
+            $fullHtml = "
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <meta http-equiv='Content-Type' content='text/html; charset=utf-8'/>
+                    <style>
+                        {$css}
+                    </style>
+                </head>
+                <body>
+                    {$html}
+                </body>
+                </html>
+            ";
+
+            $pdf = Pdf::loadHTML($fullHtml);
+            $pdf->setOption('isRemoteEnabled', true);
+            $pdf->setOption('isHtml5ParserEnabled', true);
+            // $pdf->setPaper... removed legacy incorrect call 
+            // Wait, trait returns: return ['html' => $html, 'css' => $css];
+            // The trait does NOT return width/height in the array. It puts them in the CSS string.
+            // But the controller in download needs width/height for setPaper.
+            // In the controller I have $data which has width/height.
+
+            // Let's look at the old code: 
+            // $pdf->setPaper([0, 0, $generated['css']['width'] ?? 800 ...
+            // That was definitely wrong because $generated['css'] is a STRING.
+
+            // I should use $data['width'] and $data['height'] directly.
+            // $data is either an array or object.
+            $w = is_array($data) ? ($data['width'] ?? 800) : $data->width;
+            $h = is_array($data) ? ($data['height'] ?? 600) : $data->height;
+            $pdf->setPaper([0, 0, $w, $h]);
 
             return $pdf->download('Certificado_Admin_' . $login . '.pdf');
 

@@ -213,7 +213,7 @@
                                 <h3 class="font-bold text-white text-sm leading-tight mb-3 line-clamp-2">
                                     {{ $lastApprovedCourse->curso->cur_nombre }}
                                 </h3>
-                                <a href="{{ route('participant.certificates.download', $lastApprovedCourse->curso->cur_id) }}"
+                                <a href="{{ route('participant.certificates.download', ['login' => Auth::guard('participant')->user()->par_login, 'courseId' => $lastApprovedCourse->curso->cur_id]) }}"
                                     target="_blank"
                                     class="w-full justify-center px-3 py-2 bg-white text-emerald-600 text-xs font-bold rounded-lg shadow-sm hover:bg-emerald-50 transition-colors flex items-center">
                                     <i class="fa fa-download mr-1.5"></i> Descargar Certificado

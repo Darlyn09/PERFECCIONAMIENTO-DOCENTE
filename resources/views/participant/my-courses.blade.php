@@ -223,7 +223,7 @@
 
                                     <div class="pt-2 space-y-2">
                                         @if($course->is_approved)
-                                            <a href="{{ route('participant.certificates.download', $course->cur_id) }}"
+                                            <a href="{{ route('participant.certificates.download', ['login' => Auth::guard('participant')->user()->par_login, 'courseId' => $course->cur_id]) }}"
                                                 target="_blank"
                                                 class="group relative flex items-center justify-center w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-3 rounded-lg transition-all shadow-md hover:shadow-lg overflow-hidden">
                                                 <span class="relative z-10 flex items-center">
@@ -387,7 +387,7 @@
 
                                     <div class="pt-4 border-t border-slate-100 min-h-[60px] flex items-end">
                                         @if($course->is_approved)
-                                            <a href="{{ route('participant.certificates.download', $course->cur_id) }}"
+                                            <a href="{{ route('participant.certificates.download', ['login' => Auth::guard('participant')->user()->par_login, 'courseId' => $course->cur_id]) }}"
                                                 class="flex items-center justify-center w-full py-2.5 rounded-lg border-2 border-emerald-500 text-emerald-600 font-bold hover:bg-emerald-50 transition-colors"
                                                 target="_blank">
                                                 <i class="fa fa-download mr-2"></i> Descargar Certificado

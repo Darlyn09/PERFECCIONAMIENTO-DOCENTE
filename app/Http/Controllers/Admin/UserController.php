@@ -146,6 +146,7 @@ class UserController extends Controller
                 'categoria.nom_categoria',
                 'inscripcion.ins_id', // Necesario para referencia
                 'inscripcion.ins_date as fecha_inscripcion',
+                'informacion.inf_nota', // CORRECTO: inf_nota de tabla informacion
                 'evento.eve_finaliza',
                 'informacion.inf_estado'
             )
@@ -160,8 +161,10 @@ class UserController extends Controller
         // Estadísticas (usando $allInscripciones)
         $totalCursos = $allInscripciones->count();
 
-        // Cursos Aprobados: Estado 1 en tabla informacion
-        $cursosAprobados = $allInscripciones->where('inf_estado', 1)->count();
+        // Cursos Aprobados: Nota >= 4.0 o Estado Aprobado (Legacy)
+        $cursosAprobados = $allInscripciones->filter(function ($ins) {
+            return $ins->isApproved();
+        })->count();
 
         // Áreas desarrolladas (usando $allInscripciones)
         $areas = $allInscripciones->groupBy('nom_categoria')

@@ -162,7 +162,7 @@
                                                 </span>
 
                                                 @if($course->is_approved)
-                                                    <a href="{{ route('participant.certificates.download', $course->cur_id) }}"
+                                                    <a href="{{ route('participant.certificates.download', ['login' => Auth::guard('participant')->user()->par_login, 'courseId' => $course->cur_id]) }}"
                                                         class="block mt-1 text-xs text-blue-600 hover:text-blue-800 hover:underline font-bold"
                                                         target="_blank">
                                                         <i class="fa fa-download mr-1"></i> Certificado

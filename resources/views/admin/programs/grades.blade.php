@@ -13,7 +13,8 @@
                 </a>
                 <h1 class="text-2xl font-bold text-slate-800">Calificaciones y Asistencia</h1>
                 <p class="text-slate-500">Gestión académica para {{ $programa->curso->cur_nombre }} (ID:
-                    {{ $programa->pro_id }})</p>
+                    {{ $programa->pro_id }})
+                </p>
             </div>
             <div class="flex gap-3">
                 <a href="{{ route('admin.programs.grades_template', $programa->pro_id) }}"
@@ -47,6 +48,7 @@
                                         <th class="px-6 py-3 text-center w-32">Nota (1.0 - 7.0)</th>
                                         <th class="px-6 py-3 text-center w-32">Asistencia %</th>
                                         <th class="px-6 py-3 text-center w-32">Estado</th>
+                                        <th class="px-6 py-3 text-center w-20"><i class="fa fa-certificate"></i></th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-slate-100">
@@ -54,9 +56,11 @@
                                         <tr class="hover:bg-blue-50/30 transition-colors">
                                             <td class="px-6 py-3">
                                                 <div class="font-bold text-slate-800">{{ $ins->participante->par_nombre }}
-                                                    {{ $ins->participante->par_apellidos }}</div>
+                                                    {{ $ins->participante->par_apellidos }}
+                                                </div>
                                                 <div class="text-xs text-slate-400">
-                                                    {{ $ins->participante->par_rut ?? $ins->participante->par_login }}</div>
+                                                    {{ $ins->participante->par_rut ?? $ins->participante->par_login }}
+                                                </div>
                                             </td>
                                             <td class="px-6 py-3">
                                                 <input type="number" step="0.1" min="1" max="7" name="notas[{{ $ins->ins_id }}]"
@@ -66,26 +70,38 @@
                                             </td>
                                             <td class="px-6 py-3">
                                                 <input type="number" step="1" min="0" max="100"
-                                                    name="asistencias[{{ $ins->ins_id }}]" value="{{ $ins->informacion->inf_asistencia ?? '' }}"
+                                                    name="asistencias[{{ $ins->ins_id }}]"
+                                                    value="{{ $ins->informacion->inf_asistencia ?? '' }}"
                                                     class="w-full text-center border-slate-200 rounded-lg focus:ring-blue-institutional focus:border-blue-institutional text-slate-700"
                                                     placeholder="%">
                                             </td>
                                             <td class="px-6 py-3 text-center">
-                                                @php $nota = $ins->informacion->inf_nota ?? 0; @endphp
-                                                @if($nota >= 4.0)
+                                                @if($ins->isApproved())
                                                     <span
                                                         class="inline-flex items-center px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-bold rounded-full">Aprobado</span>
-                                                @elseif($nota > 0)
+                                                @elseif(($ins->informacion->inf_nota ?? 0) > 0)
                                                     <span
                                                         class="inline-flex items-center px-2 py-1 bg-red-100 text-red-700 text-xs font-bold rounded-full">Reprobado</span>
                                                 @else
                                                     <span class="text-slate-400 text-xs">-</span>
                                                 @endif
                                             </td>
+                                            <td class="px-6 py-3 text-center">
+                                                @if($ins->isApproved())
+                                                    <a href="{{ route('admin.certificates.download', ['login' => $ins->par_login, 'course' => $programa->cur_id]) }}"
+                                                        class="text-blue-600 hover:text-blue-800 hover:bg-blue-50 p-2 rounded-full transition-colors"
+                                                        title="Descargar Certificado">
+                                                        <i class="fa fa-file-pdf"></i>
+                                                    </a>
+                                                @else
+                                                    <span class="text-slate-200 cursor-not-allowed"><i
+                                                            class="fa fa-file-pdf"></i></span>
+                                                @endif
+                                            </td>
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="4" class="px-6 py-10 text-center text-slate-400">
+                                            <td colspan="5" class="px-6 py-10 text-center text-slate-400">
                                                 No hay alumnos inscritos en este programa.
                                             </td>
                                         </tr>
@@ -112,14 +128,15 @@
                         enctype="multipart/form-data">
                         @csrf
                         <div class="mb-4">
-                            <label class="block text-xs uppercase font-bold text-indigo-300 mb-1">Archivo Excel / CSV</label>
+                            <label class="block text-xs uppercase font-bold text-indigo-300 mb-1">Archivo Excel /
+                                CSV</label>
                             <input type="file" name="file" accept=".csv,.txt,.xlsx,.xls" class="block w-full text-sm text-slate-300
-                                    file:mr-4 file:py-2 file:px-4
-                                    file:rounded-full file:border-0
-                                    file:text-xs file:font-semibold
-                                    file:bg-indigo-600 file:text-white
-                                    hover:file:bg-indigo-500 cursor-pointer
-                                " />
+                                        file:mr-4 file:py-2 file:px-4
+                                        file:rounded-full file:border-0
+                                        file:text-xs file:font-semibold
+                                        file:bg-indigo-600 file:text-white
+                                        hover:file:bg-indigo-500 cursor-pointer
+                                    " />
                         </div>
                         <button type="submit"
                             class="w-full bg-emerald-500 hover:bg-emerald-600 text-white font-bold py-2.5 rounded-xl transition-colors shadow-lg shadow-emerald-500/20">
@@ -139,12 +156,12 @@
                         <li class="flex justify-between text-sm">
                             <span class="text-slate-500">Evaluados</span>
                             <span
-                                class="font-bold text-slate-800">{{ $programa->inscripciones->where('ins_nota', '>', 0)->count() }}</span>
+                                class="font-bold text-slate-800">{{ $programa->inscripciones->filter(fn($i) => ($i->informacion->inf_nota ?? 0) > 0)->count() }}</span>
                         </li>
                         <li class="flex justify-between text-sm">
                             <span class="text-slate-500">Promedio Curso</span>
                             <span class="font-bold text-blue-600">
-                                {{ number_format($programa->inscripciones->avg('ins_nota'), 1) }}
+                                {{ number_format($programa->inscripciones->map(fn($i) => $i->informacion->inf_nota ?? 0)->filter()->avg() ?? 0, 1) }}
                             </span>
                         </li>
                     </ul>
